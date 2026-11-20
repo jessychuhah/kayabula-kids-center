@@ -149,55 +149,33 @@ export default function Home() {
 							</div>
 						</div>
 						<div className="hero-photo">
-							<Image
-								src="/assets/counts.jpeg"
-								alt="Kayabula Kids Centre community activities"
-								fill
-								priority
-								sizes="(max-width: 800px) 92vw, 50vw"
-							/>
-							<div className="hero-badge">
-								<strong>2020</strong>
-								<span>
-									Founded in
-									<br />
-									Kampala
-								</span>
+							<div className="image-collage hero-collage">
+								<div className="collage-main"><Image src="/assets/image-1.jpeg" alt="Kayabula community work" fill priority sizes="(max-width: 800px) 92vw, 34vw" /></div>
+								<div><Image src="/assets/image-3.jpeg" alt="Young people supported by the centre" fill sizes="(max-width: 800px) 46vw, 16vw" /></div>
+								<div><Image src="/assets/image-5.jpeg" alt="Community support activity" fill sizes="(max-width: 800px) 46vw, 16vw" /></div>
 							</div>
+							<div className="hero-badge"><strong>2020</strong><span>Founded in<br />Kampala</span></div>
 						</div>
 					</div>
 				</section>
 
-				<section
-					className="impact-strip"
-					id="impact"
-					aria-label="Our impact"
-				>
+				<section className="impact-strip" id="impact" aria-label="Our impact">
 					<div className="impact-inner">
-						<div className="impact-stat">
-							<strong>30+</strong>
-							<span>young people<br />supported</span>
-						</div>
-						<div className="impact-stat">
-							<strong>13</strong>
-							<span>families<br />supported</span>
-						</div>
-						<div className="impact-stat">
-							<strong>55</strong>
-							<span>villages reached<br />in Kampala District</span>
-						</div>
+						<div className="impact-stat"><strong>30+</strong><span>young people<br />supported</span></div>
+						<div className="impact-stat"><strong>13</strong><span>families<br />supported</span></div>
+						<div className="impact-stat"><strong>55</strong><span>villages reached<br />in Kampala District</span></div>
 					</div>
 				</section>
 
 				<section className="about section" id="about">
 					<div className="content-grid">
 						<div className="about-image">
-							<Image
-								src="/assets/details.jpeg"
-								alt="Kayabula community support search profile"
-								fill
-								sizes="(max-width: 800px) 92vw, 44vw"
-							/>
+							<div className="image-collage about-collage">
+								<div className="collage-main"><Image src="/assets/image-2.jpeg" alt="Kayabula community support" fill sizes="(max-width: 800px) 92vw, 24vw" /></div>
+								<div><Image src="/assets/image-4.jpeg" alt="Education and support programme" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
+								<div><Image src="/assets/image-6.jpeg" alt="Health and wellbeing activity" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
+								<div><Image src="/assets/image-7.jpeg" alt="Basic needs support" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
+							</div>
 						</div>
 						<div className="about-copy">
 							<p className="section-kicker">About the centre</p>
@@ -277,12 +255,11 @@ export default function Home() {
 							</a>
 						</div>
 						<div className="story-photo">
-							<Image
-								src="/assets/card.jpeg"
-								alt="Community support card"
-								fill
-								sizes="(max-width: 800px) 92vw, 45vw"
-							/>
+							<div className="image-collage story-collage">
+								<div className="collage-main"><Image src="/assets/image-14.jpeg" alt="Kayabula youth community activity" fill sizes="(max-width: 800px) 92vw, 24vw" /></div>
+								<div><Image src="/assets/image-10.jpeg" alt="Community impact activity" fill sizes="(max-width: 800px) 46vw, 16vw" /></div>
+								<div><Image src="/assets/image-12.jpeg" alt="Young people at the centre" fill sizes="(max-width: 800px) 46vw, 16vw" /></div>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -379,8 +356,7 @@ export default function Home() {
 							<span>03</span>
 							<h3>Spread the word</h3>
 							<p>
-								Follow and share the centre's work through Instagram and your
-								community.
+								Follow and share the centre&apos;s work through Instagram and your community.
 							</p>
 							<a
 								href="https://instagram.com/kayabulakidscentre"
@@ -397,7 +373,7 @@ export default function Home() {
 					<div className="contact-inner">
 						<div className="contact-copy">
 							<p className="section-kicker light">In touch</p>
-							<h2>Let's talk about how we can help.</h2>
+							<h2>Let&apos;s talk about how we can help.</h2>
 							<div className="contact-list">
 								<div>
 									<small>CALL OR WHATSAPP</small>
