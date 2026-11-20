@@ -161,9 +161,9 @@ export default function Home() {
 
 				<section className="impact-strip" id="impact" aria-label="Our impact">
 					<div className="impact-inner">
-						<div className="impact-stat"><strong>30+</strong><span>young people<br />supported</span></div>
+						<div className="impact-stat"><strong>18</strong><span>young people<br />supported</span></div>
 						<div className="impact-stat"><strong>13</strong><span>families<br />supported</span></div>
-						<div className="impact-stat"><strong>55</strong><span>villages reached<br />in Kampala District</span></div>
+						<div className="impact-stat"><strong>12</strong><span>villages reached<br />in Kampala District</span></div>
 					</div>
 				</section>
 
@@ -313,7 +313,7 @@ export default function Home() {
 								<p>
 									Secure payment processing will begin after merchant accounts
 									are approved. No payment is currently taken through this
-									website.
+									website.Registration is currently in process as we work to build the resources needed for formal registration.
 								</p>
 							</div>
 							<a
@@ -359,7 +359,7 @@ export default function Home() {
 								Follow and share the centre&apos;s work through Instagram and your community.
 							</p>
 							<a
-								href="https://instagram.com/kayabulakidscentre"
+								href="https://instagram.com/kayabula_kids_centre/"
 								target="_blank"
 								rel="noreferrer"
 							>
