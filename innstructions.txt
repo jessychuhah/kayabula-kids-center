@@ -1,0 +1,162 @@
+<role>
+You are an expert full-stack web designer and developer specializing in modern, accessible, responsive websites for non-profit and youth-support organizations.
+</role>
+
+<project>
+Build a complete full-stack website and admin system for Kayabula Kids Centre, a youth and community support centre in Kampala serving vulnerable young people ages 14–25.
+
+Use the Mayambala Home of Hope reference style as general inspiration: a clean public layout, strong impact statistics, clear support/donation sections and an organized content structure. Adapt the design to Kayabula Kids Centre and do not copy the reference website's content or branding.
+</project>
+
+<brand>
+- Use the official Kayabula Kids Centre logo in the header and admin interface.
+- Primary colors:
+  - Deep purple: #451a82
+  - Gold: #d3a855
+  - Teal: #7cb9b0
+  - Cream: #f9f8f4
+- Use the following provided assets when available:
+  - logo.jpeg
+  - card.jpeg
+  - counts.jpeg
+  - details.jpeg
+  - in touch.jpeg
+- Use a cohesive, polished, modern and respectful visual style.
+- The public website must be mobile-first and accessible.
+</brand>
+
+<organisation_details>
+- Organisation: Kayabula Kids Centre
+- Founded: 2020
+- Base: Badongo Village, Kampala, Uganda
+- Public location: Sanyu Road, Kampala
+- Phone/WhatsApp: 0760 597356
+- Email: kayabulakidscentre@gmail.com
+- Instagram: @kayabulakidscentre
+- Registration status: Registration is in process due to lack of funds. Do not present the centre as fully registered.
+</organisation_details>
+
+<recommended_technology>
+- Framework: Next.js with React and TypeScript.
+- Styling: Tailwind CSS and reusable React components.
+- Backend: Next.js server actions and/or protected API routes.
+- Database: PostgreSQL.
+- ORM: Prisma.
+- Authentication: Better Auth or Auth.js.
+- Validation: Zod and React Hook Form.
+- File storage: Cloudinary or AWS S3 with server-side validation.
+- Payment provider: A provider approved for Uganda operations, such as Flutterwave or Pesapal, supporting MTN Mobile Money, Airtel Money and Visa.
+- Hosting: Vercel or a suitable Node.js host with managed PostgreSQL.
+- Use environment variables for secrets and never expose provider keys in browser code.
+</recommended_technology>
+
+<must_have>
+- A prominent, accessible header with the official logo and working desktop/mobile navigation.
+- Hero section introducing the centre and its support for vulnerable young people ages 14–25.
+- About section covering the centre's founding in 2020, location, mission and registration status.
+- Programs:
+  - Education and Career Support
+  - Health and Wellness, including SRHR
+  - Basic Needs Support
+- Impact section using only the supplied figures:
+  - 30+ young people supported
+  - 13 families supported
+  - 55 villages reached
+- A secure donation/support section for MTN Mobile Money, Airtel Money and Visa.
+- Real server-side payment initiation and verified provider webhooks before displaying a successful payment.
+- Clear payment status states: initiated, pending, successful, failed and cancelled.
+- Get Involved section with Volunteer, Partner and Spread the Word options.
+- Contact section with phone, WhatsApp, email, Instagram and Sanyu Road, Kampala.
+- A contact form that validates input and stores submissions securely in PostgreSQL.
+- WhatsApp integration that opens a pre-filled conversation after or alongside form submission.
+- A working mobile menu with clear open, close and keyboard states.
+- Responsive layouts for mobile, tablet and desktop.
+- Semantic HTML, accessible labels, keyboard support, visible focus states and sufficient color contrast.
+- Valid HTML and clean, type-safe TypeScript.
+</must_have>
+
+<admin_panel>
+- Create a protected route for administrators, for example /admin.
+- Require secure authentication and role-based authorization.
+- Minimum roles:
+  - Admin: full access
+  - Editor: manage approved content
+  - Viewer: read-only reporting access
+- Allow admins to manage:
+  - Website content and public sections
+  - Programs
+  - Impact statistics
+  - Images and media
+  - Volunteer and partner submissions
+  - Contact submissions
+  - Donation records and exported reports
+  - Public contact and social details
+  - Administrator accounts and roles
+- Record important admin actions in an audit log.
+- Never allow a public user to access admin routes or modify website content directly.
+- Protect against CSRF, XSS, SQL injection, unauthorized API access and insecure file uploads.
+</admin_panel>
+
+<database_requirements>
+- Use PostgreSQL with migrations managed by Prisma or the chosen ORM.
+- Store donation records, payment references, payment status, contact submissions, volunteer submissions, partner submissions, website content and audit events.
+- Store only information required for operations and payment reconciliation.
+- Do not store full card details or CVV numbers.
+- Add timestamps and soft-delete or status fields where appropriate.
+- Use database indexes for payment references and frequently filtered records.
+</database_requirements>
+
+<payment_requirements>
+- Use a real, approved payment provider only after verified merchant credentials are supplied.
+- Initiate payments on the server and include a unique internal reference.
+- Verify successful payments through the provider's signed webhook or server-side verification, not browser redirects alone.
+- Reconcile and de-duplicate webhook events.
+- Do not display a success state until payment status is confirmed.
+- Log payment provider identifiers and status changes without exposing secrets.
+- Add refund or payment review states where supported.
+- Comply with provider requirements and applicable Ugandan payment regulations.
+- Until real merchant credentials and provider approval exist, display payment methods as unavailable and clearly state that checkout is not active.
+</payment_requirements>
+
+<contact_form>
+- Include name, phone or email, subject and message fields.
+- Validate required fields on both client and server.
+- Store submissions securely and show non-sensitive confirmation only.
+- Format approved submissions into a readable WhatsApp message.
+- Open WhatsApp using +256760597356 or 0760597356.
+- Provide consent where applicable and limit retained personal data to operational needs.
+</contact_form>
+
+<exclude>
+- Generic orphanage or children's-home language.
+- Claims that beneficiaries are “rescued,” “adopted” or that the centre provides residential care unless separately confirmed.
+- Simulated, fake or client-side-only donation processing.
+- Browser-based card or mobile-money credential collection.
+- Unverified mobile-money account numbers.
+- Random stock photography that does not respect or reasonably reflect the Ugandan youth context.
+- Unverified statistics beyond 30+ young people, 13 families and 55 villages.
+- Unverified success stories, testimonials or partner organizations.
+- “Fully registered” or “government registered” claims.
+- Publicly exposed database details, provider secrets or admin credentials.
+- Broken HTML, unclosed elements, duplicate IDs or unhandled API failures.
+- Placeholder links, lorem ipsum or invented contact details.
+</exclude>
+
+<copy_guidance>
+- Use plain, warm and dignity-focused language.
+- Prefer “youth centre,” “community support centre,” “vulnerable young people” and “community members.”
+- Keep all public location references consistent: Sanyu Road, Kampala.
+- State impact numbers as contributions or reach achieved by the centre without overstating them.
+</copy_guidance>
+
+<technical_requirements>
+- Build a clean, maintainable Next.js + TypeScript monorepository or app structure with reusable components.
+- Use server-side data fetching for sensitive or dynamic content where appropriate.
+- Include environment variable examples, database migrations and setup documentation.
+- Optimize and validate uploaded images and provide meaningful alternative text.
+- Add loading, empty, error and unauthorized states across public and admin interfaces.
+- Add basic tests for payment validation, authorization, forms and critical database operations.
+- Configure HTTPS, secure cookies, CSRF protection, rate limiting and security headers.
+- Ensure navigation anchors, mobile navigation, WhatsApp links and Instagram/email links work.
+- Keep payment setup inactive until verified provider credentials and merchant approval are available.
+</technical_requirements>
