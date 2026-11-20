@@ -359,7 +359,7 @@ export default function Home() {
 								Follow and share the centre&apos;s work through Instagram and your community.
 							</p>
 							<a
-								href="https://instagram.com/kayabula_kids_centre/"
+								href="https://instagram.com/kayabula_kids_center"
 								target="_blank"
 								rel="noreferrer"
 							>
@@ -462,7 +462,7 @@ export default function Home() {
 					</a>
 					<p>Badongo Village · Sanyu Road · Kampala</p>
 					<a
-						href="https://instagram.com/kayabulakidscentre"
+						href="https://instagram.com/kayabula_kids_center"
 						target="_blank"
 						rel="noreferrer"
 					>
