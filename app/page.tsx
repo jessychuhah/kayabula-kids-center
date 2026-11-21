@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const programs = [
 	{
@@ -24,6 +24,94 @@ const programs = [
 export default function Home() {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [sent, setSent] = useState(false);
+	const [paymentAmount, setPaymentAmount] = useState("10000");
+	const [paymentStatus, setPaymentStatus] = useState("Checking payment availability...");
+	const [paymentError, setPaymentError] = useState("");
+	const [paymentLoading, setPaymentLoading] = useState(false);
+	const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+	const [confirmAmountOpen, setConfirmAmountOpen] = useState(false);
+	const [selectedMethod, setSelectedMethod] = useState("");
+	const [donorName, setDonorName] = useState("");
+	const [donorEmail, setDonorEmail] = useState("");
+	const [donorPhone, setDonorPhone] = useState("");
+
+	useEffect(() => {
+		async function checkPaymentAvailability() {
+			try {
+				const response = await fetch("/api/payments/pesapal/config", { cache: "no-store" });
+				const data = await response.json();
+				setPaymentStatus(data.configured ? "Secure checkout available" : "Checkout not active yet");
+			} catch {
+				setPaymentStatus("Checkout not active yet");
+			}
+		}
+
+		checkPaymentAvailability();
+	}, []);
+
+	useEffect(() => {
+		function handleEscape(event: KeyboardEvent) {
+			if (event.key !== "Escape") return;
+			setMenuOpen(false);
+			setPaymentModalOpen(false);
+			setConfirmAmountOpen(false);
+		}
+
+		window.addEventListener("keydown", handleEscape);
+		return () => window.removeEventListener("keydown", handleEscape);
+	}, []);
+
+	function openPaymentModal(method: string) {
+		setSelectedMethod(method);
+		setPaymentError("");
+		setPaymentModalOpen(true);
+	}
+
+	function confirmPaymentDetails() {
+		if (!donorName.trim() || !donorEmail.trim() || !donorPhone.trim()) {
+			setPaymentError("Please enter your name, email and phone number.");
+			return;
+		}
+		if (!Number(paymentAmount) || Number(paymentAmount) < 1000) {
+			setPaymentError("Enter a donation amount of at least UGX 1,000.");
+			return;
+		}
+		setPaymentError("");
+		setConfirmAmountOpen(true);
+	}
+
+	async function startPayment(method: string) {
+		setPaymentLoading(true);
+		setPaymentError("");
+		setPaymentStatus(`Starting ${method} checkout...`);
+
+		try {
+			const response = await fetch("/api/payments/pesapal/initiate", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					amount: Number(paymentAmount),
+					currency: "UGX",
+					name: donorName,
+					email: donorEmail,
+					phone: donorPhone,
+				}),
+			});
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || "Unable to start checkout.");
+			}
+			window.location.assign(data.redirectUrl);
+		} catch (error) {
+			setConfirmAmountOpen(false);
+			setPaymentModalOpen(false);
+			setPaymentStatus("Checkout unavailable");
+			setPaymentError(error instanceof Error ? error.message : "Unable to start checkout.");
+		} finally {
+			setPaymentLoading(false);
+		}
+	}
 
 	function submitWhatsApp(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -161,9 +249,9 @@ export default function Home() {
 
 				<section className="impact-strip" id="impact" aria-label="Our impact">
 					<div className="impact-inner">
-						<div className="impact-stat"><strong>18</strong><span>young people<br />supported</span></div>
+						<div className="impact-stat"><strong>30+</strong><span>young people<br />supported</span></div>
 						<div className="impact-stat"><strong>13</strong><span>families<br />supported</span></div>
-						<div className="impact-stat"><strong>12</strong><span>villages reached<br />in Kampala District</span></div>
+						<div className="impact-stat"><strong>55</strong><span>villages reached</span></div>
 					</div>
 				</section>
 
@@ -295,25 +383,23 @@ export default function Home() {
 						<div className="payment-card">
 							<p className="payment-title">Choose a payment option</p>
 							<div className="payment-options">
-								<button type="button">
+								<button type="button" disabled={paymentLoading} onClick={() => openPaymentModal("MTN MoMo")}>
 									<b>MTN</b>
 									<span>MoMo</span>
 								</button>
-								<button type="button">
+								<button type="button" disabled={paymentLoading} onClick={() => openPaymentModal("Airtel Money")}>
 									<b>AIRTEL</b>
 									<span>Money</span>
 								</button>
-								<button type="button">
+								<button type="button" disabled={paymentLoading} onClick={() => openPaymentModal("Visa card")}>
 									<b>VISA</b>
 									<span>Card</span>
 								</button>
 							</div>
-							<div className="payment-warning">
-								<strong>Checkout not active yet</strong>
+							<div className="payment-warning" role="status">
+								<strong>{paymentStatus}</strong>
 								<p>
-									Secure payment processing will begin after merchant accounts
-									are approved. No payment is currently taken through this
-									website.Registration is currently in process as we work to build the resources needed for formal registration.
+									{paymentError || "Secure payment processing begins only after merchant credentials are configured. No payment is currently taken through this website."}
 								</p>
 							</div>
 							<a
@@ -482,6 +568,50 @@ export default function Home() {
 			>
 				<span>WA</span>
 			</a>
+
+			{paymentModalOpen && (
+				<div className="payment-modal-backdrop" role="presentation" onMouseDown={(event) => {
+					if (event.target === event.currentTarget) setPaymentModalOpen(false);
+				}}>
+					<div className="payment-modal" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+						<button className="payment-modal-close" type="button" aria-label="Close payment panel" onClick={() => setPaymentModalOpen(false)}>×</button>
+						<p className="section-kicker">{selectedMethod}</p>
+						<h3 id="payment-modal-title">Donation details</h3>
+						<label>
+							Donation amount (UGX)
+							<input type="number" min="1000" step="1000" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} />
+						</label>
+						<label>
+							Name
+							<input type="text" value={donorName} onChange={(event) => setDonorName(event.target.value)} placeholder="Full name" />
+						</label>
+						<label>
+							Email
+							<input type="email" value={donorEmail} onChange={(event) => setDonorEmail(event.target.value)} placeholder="name@example.com" />
+						</label>
+						<label>
+							Phone number
+							<input type="tel" value={donorPhone} onChange={(event) => setDonorPhone(event.target.value)} placeholder="0760 597356" />
+						</label>
+						{paymentError && <p className="payment-modal-error" role="alert">{paymentError}</p>}
+						<button className="button button-gold payment-confirm-button" type="button" onClick={confirmPaymentDetails}>Confirm</button>
+					</div>
+				</div>
+			)}
+
+			{confirmAmountOpen && (
+				<div className="payment-modal-backdrop confirmation-backdrop" role="presentation">
+					<div className="payment-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+						<p className="section-kicker">Confirm donation</p>
+						<h3 id="confirm-title">Are you sure this is the right amount?</h3>
+						<p><strong>UGX {Number(paymentAmount).toLocaleString()}</strong> via {selectedMethod}</p>
+						<div className="confirmation-actions">
+							<button className="button button-outline" type="button" disabled={paymentLoading} onClick={() => setConfirmAmountOpen(false)}>Edit</button>
+							<button className="button button-gold" type="button" disabled={paymentLoading} onClick={() => startPayment(selectedMethod)}>{paymentLoading ? "Opening..." : "Yes, continue"}</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</>
 	);
 }

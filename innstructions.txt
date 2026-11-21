@@ -45,7 +45,7 @@ Use the Mayambala Home of Hope reference style as general inspiration: a clean p
 - Authentication: Better Auth or Auth.js.
 - Validation: Zod and React Hook Form.
 - File storage: Cloudinary or AWS S3 with server-side validation.
-- Payment provider: A provider approved for Uganda operations, such as Flutterwave or Pesapal, supporting MTN Mobile Money, Airtel Money and Visa.
+- Payment provider: A provider approved for Uganda operations, such as Pesapal, supporting MTN Mobile Money, Airtel Money and Visa.
 - Hosting: Vercel or a suitable Node.js host with managed PostgreSQL.
 - Use environment variables for secrets and never expose provider keys in browser code.
 </recommended_technology>
@@ -121,7 +121,7 @@ Use the Mayambala Home of Hope reference style as general inspiration: a clean p
 <contact_form>
 - Include name, phone or email, subject and message fields.
 - Validate required fields on both client and server.
-- Store submissions securely and show non-sensitive confirmation only.
+'- Store submissions securely and show non-sensitive confirmation only.
 - Format approved submissions into a readable WhatsApp message.
 - Open WhatsApp using +256760597356 or 0760597356.
 - Provide consent where applicable and limit retained personal data to operational needs.
