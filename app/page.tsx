@@ -378,16 +378,18 @@ export default function Home() {
 								<div>
 									<small>CALL OR WHATSAPP</small>
 									<a href="tel:+256760597356">0760 597356</a>
+									<a href="tel:+256704527892">0704527892</a>
 								</div>
 								<div>
 									<small>EMAIL</small>
 									<a href="mailto:kayabulakidscentre@gmail.com">
 										kayabulakidscentre@gmail.com
 									</a>
+									
 								</div>
 								<div>
 									<small>VISIT</small>
-									<span>Sanyu Road, Kampala</span>
+									<span>Sanyu Road, Badongo village, Kampala</span>
 								</div>
 							</div>
 						</div>

@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  reference     String   @unique
+  amount        Int
+  currency      String
+  method        String
+  status        String   @default("PENDING")
+  providerRef   String?
+  customerName  String?
+  customerEmail String?
+  customerPhone String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
