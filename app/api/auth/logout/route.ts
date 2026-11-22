@@ -26,6 +26,6 @@ export async function POST(request: Request) {
 		return response;
 	} catch (error) {
 		console.error("Account logout failed.", error);
-		return NextResponse.json({ error: "Unable to log out right now." }, { status: 500 });
+		return NextResponse.json({ error: "Unable to log out right now. " }, { status: 500 });
 	}
 }
