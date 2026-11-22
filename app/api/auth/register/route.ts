@@ -1,0 +1,73 @@
+import { hash } from "bcryptjs";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createAuthSession, isSameOrigin, safeSecretMatch, sessionCookieName, sessionLifetimeSeconds } from "@/lib/auth";
+import { getPrismaClient } from "@/lib/prisma";
+
+const registerSchema = z.object({
+	name: z.string().trim().min(2).max(100),
+	email: z.email().trim().toLowerCase().max(160),
+	phone: z.string().trim().min(5).max(40),
+	password: z.string().min(10).max(128),
+	adminSetupToken: z.string().max(256).optional(),
+});
+
+export async function POST(request: Request) {
+	if (!isSameOrigin(request)) {
+		return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+	}
+
+	try {
+		const parsed = registerSchema.safeParse(await request.json());
+		if (!parsed.success) {
+			return NextResponse.json({ error: "Check your name, email, phone and password." }, { status: 400 });
+		}
+
+		const { name, email, phone, password, adminSetupToken } = parsed.data;
+		const settingUpAdmin = Boolean(adminSetupToken);
+		if (settingUpAdmin && !safeSecretMatch(adminSetupToken ?? "", process.env.ADMIN_SETUP_TOKEN)) {
+			return NextResponse.json({ error: "The administrator setup token is not valid." }, { status: 403 });
+		}
+
+		const passwordHash = await hash(password, 12);
+		const db = getPrismaClient();
+		const user = await db.$transaction(async (transaction) => {
+			let role = "USER";
+			if (settingUpAdmin) {
+				const existingAdmin = await transaction.user.findFirst({ where: { role: "ADMIN" } });
+				if (existingAdmin) throw new Error("ADMIN_ALREADY_CONFIGURED");
+				role = "ADMIN";
+			}
+
+			return transaction.user.create({
+				data: { name, email, phone, passwordHash, role },
+				select: { id: true, name: true, email: true, phone: true, role: true },
+			});
+		}, { isolationLevel: "Serializable" });
+
+		const session = await createAuthSession(user.id);
+		const response = NextResponse.json({ user }, { status: 201 });
+		response.cookies.set(sessionCookieName, session.token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/",
+			expires: session.expiresAt,
+			maxAge: sessionLifetimeSeconds,
+		});
+		return response;
+	} catch (error) {
+		if (error instanceof SyntaxError) {
+			return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+		}
+		if (error instanceof Error && error.message === "ADMIN_ALREADY_CONFIGURED") {
+			return NextResponse.json({ error: "An administrator account has already been set up." }, { status: 409 });
+		}
+		if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
+			return NextResponse.json({ error: "An account with that email already exists." }, { status: 409 });
+		}
+
+		console.error("Account registration failed.", error);
+		return NextResponse.json({ error: "Unable to create the account right now." }, { status: 500 });
+	}
+}

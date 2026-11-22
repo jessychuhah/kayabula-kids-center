@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkPesapalTransaction, getPesapalToken } from "@/lib/pesapal";
+import { saveVerifiedDonationStatus } from "@/lib/donation-status";
 
 async function handleNotification(request: Request) {
   const url = new URL(request.url);
@@ -14,9 +15,8 @@ async function handleNotification(request: Request) {
   try {
     const token = await getPesapalToken();
     const status = await checkPesapalTransaction(token, orderTrackingId);
+    await saveVerifiedDonationStatus(orderTrackingId, status);
 
-    // Return 200 to acknowledge the provider callback.
-    // Persist status in PostgreSQL in the reconciliation layer.
     return NextResponse.json({ orderTrackingId, status });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to verify notification.";

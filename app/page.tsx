@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 const programs = [
@@ -21,8 +22,17 @@ const programs = [
 	},
 ];
 
+type AccountUser = {
+	id: string;
+	name: string;
+	email: string;
+	phone: string;
+	role: string;
+};
+
 export default function Home() {
 	const [menuOpen, setMenuOpen] = useState(false);
+	const [loggedInUser, setLoggedInUser] = useState<AccountUser | null>(null);
 	const [sent, setSent] = useState(false);
 	const [paymentAmount, setPaymentAmount] = useState("10000");
 	const [paymentStatus, setPaymentStatus] = useState("Checking payment availability...");
@@ -34,6 +44,18 @@ export default function Home() {
 	const [donorName, setDonorName] = useState("");
 	const [donorEmail, setDonorEmail] = useState("");
 	const [donorPhone, setDonorPhone] = useState("");
+
+	useEffect(() => {
+		fetch("/api/auth/session", { cache: "no-store" })
+			.then(async (response) => {
+				if (!response.ok) return;
+				const data = await response.json();
+				setLoggedInUser(data.user);
+			})
+			.catch(() => {
+				setLoggedInUser(null);
+			});
+	}, []);
 
 	useEffect(() => {
 		async function checkPaymentAvailability() {
@@ -63,6 +85,11 @@ export default function Home() {
 
 	function openPaymentModal(method: string) {
 		setSelectedMethod(method);
+		if (loggedInUser) {
+			setDonorName(loggedInUser.name);
+			setDonorEmail(loggedInUser.email);
+			setDonorPhone(loggedInUser.phone);
+		}
 		setPaymentError("");
 		setPaymentModalOpen(true);
 	}
@@ -92,6 +119,7 @@ export default function Home() {
 				body: JSON.stringify({
 					amount: Number(paymentAmount),
 					currency: "UGX",
+					method,
 					name: donorName,
 					email: donorEmail,
 					phone: donorPhone,
@@ -195,6 +223,12 @@ export default function Home() {
 						>
 							Contact
 						</a>
+						<a href="/account" onClick={() => setMenuOpen(false)}>
+							{loggedInUser ? "My account" : "Log in"}
+						</a>
+						{loggedInUser?.role === "ADMIN" && (
+							<a href="/admin" onClick={() => setMenuOpen(false)}>Admin dashboard</a>
+						)}
 						<a
 							className="nav-donate"
 							href="#donate"
@@ -218,8 +252,8 @@ export default function Home() {
 								<em>hopeful futures.</em>
 							</h1>
 							<p className="hero-lead">
-								A safe, practical place for vulnerable young people ages 14–25
-								to access education, health support and basic needs in Kampala.
+								A safe, practical place for under-served young people age between 14–25
+								to access education both formal and informal, health an wellness through HCT-HIV Testing and basic nutrious food stuff in Kampala.
 							</p>
 							<div className="hero-actions">
 								<a
@@ -249,9 +283,9 @@ export default function Home() {
 
 				<section className="impact-strip" id="impact" aria-label="Our impact">
 					<div className="impact-inner">
-						<div className="impact-stat"><strong>30+</strong><span>young people<br />supported</span></div>
+						<div className="impact-stat"><strong>20</strong><span>young people<br />supported</span></div>
 						<div className="impact-stat"><strong>13</strong><span>families<br />supported</span></div>
-						<div className="impact-stat"><strong>55</strong><span>villages reached</span></div>
+						<div className="impact-stat"><strong>10</strong><span>villages reached</span></div>
 					</div>
 				</section>
 
@@ -261,8 +295,8 @@ export default function Home() {
 							<div className="image-collage about-collage">
 								<div className="collage-main"><Image src="/assets/image-2.jpeg" alt="Kayabula community support" fill sizes="(max-width: 800px) 92vw, 24vw" /></div>
 								<div><Image src="/assets/image-4.jpeg" alt="Education and support programme" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
-								<div><Image src="/assets/image-6.jpeg" alt="Health and wellbeing activity" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
-								<div><Image src="/assets/image-7.jpeg" alt="Basic needs support" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
+								<div><Image src="/assets/image-6.jpeg" alt="Health and wellness HCT-HIV Testing" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
+								<div><Image src="/assets/image-7.jpeg" alt="Basic nutritious" fill sizes="(max-width: 800px) 46vw, 14vw" /></div>
 							</div>
 						</div>
 						<div className="about-copy">
@@ -271,7 +305,7 @@ export default function Home() {
 								Care, dignity and opportunity for every young person.
 							</h2>
 							<p>
-								Kayabula Kids Centre began in 2020 in Badongo Village, Kampala.
+								Kayabula Kids Centre was Founded in 2020 in Badongo Village, Kampala.
 								We provide a welcoming community space where young people can
 								strengthen their skills, improve their wellbeing and get practical
 								support.
@@ -333,7 +367,7 @@ export default function Home() {
 							<h2>A little support can open a bigger future.</h2>
 							<p>
 								We work alongside families and community members to help young
-								people stay connected to learning, wellbeing and opportunity.
+								people stay connected to learning, Health, wellness and opportunity.
 							</p>
 							<a
 								className="button button-cream"
@@ -382,6 +416,10 @@ export default function Home() {
 						</div>
 						<div className="payment-card">
 							<p className="payment-title">Choose a payment option</p>
+							<p className="payment-account-hint">
+								<Link href="/account">{loggedInUser ? "Your saved details" : "Log in or create an account"}</Link>
+								{" "}or continue as a guest.
+							</p>
 							<div className="payment-options">
 								<button type="button" disabled={paymentLoading} onClick={() => openPaymentModal("MTN MoMo")}>
 									<b>MTN</b>
@@ -464,7 +502,6 @@ export default function Home() {
 								<div>
 									<small>CALL OR WHATSAPP</small>
 									<a href="tel:+256760597356">0760 597356</a>
-									<a href="tel:+256704527892">0704527892</a>
 								</div>
 								<div>
 									<small>EMAIL</small>
@@ -583,15 +620,15 @@ export default function Home() {
 						</label>
 						<label>
 							Name
-							<input type="text" value={donorName} onChange={(event) => setDonorName(event.target.value)} placeholder="Full name" />
+							<input type="text" value={donorName} onChange={(event) => setDonorName(event.target.value)} placeholder="Full name" required disabled={Boolean(loggedInUser)} />
 						</label>
 						<label>
 							Email
-							<input type="email" value={donorEmail} onChange={(event) => setDonorEmail(event.target.value)} placeholder="name@example.com" />
+							<input type="email" value={donorEmail} onChange={(event) => setDonorEmail(event.target.value)} placeholder="name@example.com" required disabled={Boolean(loggedInUser)} />
 						</label>
 						<label>
 							Phone number
-							<input type="tel" value={donorPhone} onChange={(event) => setDonorPhone(event.target.value)} placeholder="0760 597356" />
+							<input type="tel" value={donorPhone} onChange={(event) => setDonorPhone(event.target.value)} placeholder="0760 597356" required disabled={Boolean(loggedInUser)} />
 						</label>
 						{paymentError && <p className="payment-modal-error" role="alert">{paymentError}</p>}
 						<button className="button button-gold payment-confirm-button" type="button" onClick={confirmPaymentDetails}>Confirm</button>

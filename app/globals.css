@@ -105,6 +105,35 @@ img { display: block; }
 .giving-list strong { color: var(--ink); margin-right: 8px; }
 .payment-card { background: white; box-shadow: 0 24px 70px rgba(69,26,130,.09); padding: 42px; }
 .payment-title { margin: 0 0 20px; font-family: Georgia, serif; font-size: 22px; }
+.payment-account-hint { margin: -10px 0 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.payment-account-hint a { color: var(--purple); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.payment-modal input:disabled { background: #f0eef4; color: var(--muted); cursor: not-allowed; }
+.account-page { min-height: 100vh; display: grid; place-items: center; padding: 32px 18px; background: var(--cream); }
+.account-card { width: min(460px, 100%); padding: 36px; border: 1px solid var(--line); background: white; box-shadow: 0 24px 70px rgba(69,26,130,.09); }
+.account-back-link { display: inline-block; margin-bottom: 36px; color: var(--purple); font-size: 13px; font-weight: 800; }
+.account-card h1 { margin: 0 0 12px; color: var(--purple); font-family: Georgia, serif; font-size: clamp(32px, 8vw, 44px); }
+.account-description { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.account-form { display: grid; gap: 14px; }
+.account-form label { display: grid; gap: 7px; color: var(--purple); font-size: 12px; font-weight: 800; }
+.account-form input { width: 100%; height: 48px; border: 1px solid var(--line); border-radius: 3px; padding: 0 12px; background: white; color: var(--ink); }
+.account-form input:focus { outline: 2px solid rgba(69,26,130,.2); border-color: var(--purple); }
+.account-optional { color: var(--muted); font-size: 10px; font-weight: 400; }
+.account-error, .admin-data-error { border-left: 3px solid #9b302f; background: #fbefed; padding: 12px; color: #842c2a; font-size: 13px; line-height: 1.5; }
+.account-action { width: 100%; margin-top: 8px; }
+.account-switch { width: 100%; margin-top: 20px; border: 0; background: transparent; color: var(--purple); font-size: 13px; font-weight: 800; cursor: pointer; }
+.account-details { margin: 24px 0; border-top: 1px solid var(--line); }
+.account-details p { display: grid; gap: 5px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.account-details span { color: var(--muted); font-size: 11px; }
+.account-details strong { overflow-wrap: anywhere; font-size: 14px; }
+.admin-nav a { position: relative; width: 100%; height: 46px; border-radius: 7px; color: #777482; display: flex; align-items: center; gap: 12px; padding: 0 14px; font-size: 13px; font-weight: 700; }
+.admin-nav a.active { background: #f2edf8; color: var(--purple); }
+.admin-nav a.active::before { content: ""; position: absolute; left: -14px; width: 3px; height: 28px; border-radius: 0 4px 4px 0; background: var(--purple); }
+.admin-home-link { display: block; padding: 12px 10px; color: var(--purple); font-size: 11px; font-weight: 800; }
+.admin-profile { margin-top: 8px; }
+.quick-button:disabled { cursor: wait; opacity: .7; }
+.admin-live-table { margin-top: 16px; padding: 22px; }
+.admin-live-label { border-radius: 12px; padding: 6px 10px; background: #edf7f4; color: #61988f; font-size: 9px; font-weight: 800; }
+.admin-data-state { margin: 20px 0 0; color: #777482; font-size: 13px; line-height: 1.6; }
 .payment-modal-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(29,26,37,.58); backdrop-filter: blur(6px); }
 .payment-modal { position: relative; width: min(420px, 100%); border-radius: 8px; background: var(--cream); border: 1px solid rgba(69,26,130,.12); box-shadow: 0 28px 80px rgba(29,26,37,.28); padding: 28px; }
 .payment-modal h3, .payment-confirmation h3 { margin: 0 0 20px; font-family: Georgia, serif; font-size: 30px; }
@@ -358,6 +387,7 @@ footer { background: #32135f; color: white; }
 .status { width: fit-content; border-radius: 12px; padding: 5px 9px; font-size: 8px; font-weight: 800; }
 .status.successful { background: #edf7f4; color: #61988f; }
 .status.pending { background: #fbf4df; color: #b28b3d; }
+.status.failed, .status.reversed { background: #fbefed; color: #9b302f; }
 .enquiry-list { margin-top: 14px; }
 .enquiry-item { width: 100%; min-height: 62px; border: 0; border-top: 1px solid #f0eef4; background: transparent; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 9px; text-align: left; cursor: pointer; }
 .enquiry-avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; font-weight: 900; }

@@ -1,4 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kayabula Kids Centre
+
+## Local setup
+
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and set both Supabase URLs: `DATABASE_URL` to the transaction-mode pooler (port `6543`) for app queries, and `DIRECT_URL` to the session-mode pooler (port `5432`) for Prisma migrations. URL-encode special characters in the database password (for example, `@` as `%40`).
+3. Set `ADMIN_SETUP_TOKEN` to a long, random secret. Keep it private; it can only be used to create the first administrator.
+4. For a new, empty database, apply the migrations and generate the Prisma client:
+
+   ```bash
+   npx prisma migrate deploy
+   npx prisma generate
+   ```
+
+5. Start the website with `npm run dev`.
+
+If the database already contains the original `ContactSubmission` and `Donation` tables but has no Prisma migration history, baseline the initial migration before deploying the account migration:
+
+```bash
+npx prisma migrate resolve --applied 20261121200000_initial
+npx prisma migrate deploy
+npx prisma generate
+```
+
+Create a regular account at `/account` to save a name, email and phone number for checkout. Guests can still donate without an account. To activate the administrator dashboard, create the first account with the configured administrator setup token; later attempts to use that token are rejected.
+
+The `/admin` page requires an administrator session and displays persisted donation records. Payment checkout remains unavailable until the Pesapal credentials and callback settings in `.env` are configured.
 
 ## Getting Started
 
