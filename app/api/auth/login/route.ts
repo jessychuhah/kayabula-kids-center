@@ -1,6 +1,7 @@
 import { compare } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { accountApprovalGracePeriodMs, suspendExpiredUnapprovedAccounts } from "@/lib/account-approval";
 import { createAuthSession, isSameOrigin, sessionCookieName, sessionLifetimeSeconds } from "@/lib/auth";
 import { getPrismaClient } from "@/lib/prisma";
 
@@ -26,10 +27,32 @@ export async function POST(request: Request) {
 		if (!user || !(await compare(parsed.data.password, user.passwordHash))) {
 			return NextResponse.json({ error: "Email or password is incorrect." }, { status: 401 });
 		}
+		if (
+			user.approvalStatus === "PENDING" &&
+			user.createdAt.getTime() <= Date.now() - accountApprovalGracePeriodMs
+		) {
+			await suspendExpiredUnapprovedAccounts([user.id]);
+			return NextResponse.json({ error: "This account was suspended because it was not approved within five days." }, { status: 403 });
+		}
+		if (user.status !== "ACTIVE") {
+			return NextResponse.json({ error: "This account is suspended. Contact an administrator for help." }, { status: 403 });
+		}
 
-		const session = await createAuthSession(user.id);
+		const [, session] = await Promise.all([
+			getPrismaClient().user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }),
+			createAuthSession(user.id),
+		]);
 		const response = NextResponse.json({
-			user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role },
+			user: {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				phone: user.phone,
+				location: user.location,
+				category: user.category,
+				role: user.role,
+				approvalStatus: user.approvalStatus,
+			},
 		});
 		response.cookies.set(sessionCookieName, session.token, {
 			httpOnly: true,

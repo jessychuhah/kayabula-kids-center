@@ -22,9 +22,17 @@ npx prisma migrate deploy
 npx prisma generate
 ```
 
-Create a regular account at `/account` to save a name, email and phone number for checkout. Guests can still donate without an account. To activate the administrator dashboard, create the first account with the configured administrator setup token; later attempts to use that token are rejected.
+Create a regular account at `/account` to save a name, email, phone number, and location for checkout and account management. New members can use the website while awaiting approval; accounts still pending after five days are suspended. Guests can still donate without an account. To activate the administrator dashboard, create the first account with the configured administrator setup token; later attempts to use that token are rejected.
 
 The `/admin` page requires an administrator session and displays persisted donation records. Payment checkout remains unavailable until the Pesapal credentials and callback settings in `.env` are configured.
+
+## Account approval, support chat and public content
+
+New member accounts can use the website immediately while awaiting administrator approval. Approval creates an in-app notification and queues an email through Resend. Set `RESEND_API_KEY` and a verified `EMAIL_FROM` address to deliver approval email. Vercel runs `/api/cron/pending-accounts` hourly to suspend accounts still awaiting approval after five days and retry queued approval emails; set `CRON_SECRET` in the deployment environment. Account access checks also enforce the five-day limit.
+
+Administrators can approve users, manage the homepage impact figures and WhatsApp number, and manage ads at `/admin/users` and `/admin/content`. Ad images and videos are uploaded directly to Cloudflare R2. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and the HTTPS `R2_PUBLIC_BASE_URL` in `.env`. Configure R2 CORS to allow `PUT` from the production site origin (and `http://localhost:3000` for local development), with the `Content-Type` request header. Uploads are limited to 100 MB.
+
+Signed-in members can open the floating support chat on the homepage. Administrators read and reply to conversations in `/admin/inbox`.
 
 ## Getting Started
 

@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { getPrismaClient } from "@/lib/prisma";
+import { accountApprovalGracePeriodMs, suspendExpiredUnapprovedAccounts } from "@/lib/account-approval";
 
 export const sessionCookieName = "kayabula_session";
 export const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
@@ -11,7 +12,10 @@ export type AuthUser = {
 	name: string;
 	email: string;
 	phone: string;
+	location: string | null;
+	category: string | null;
 	role: string;
+	approvalStatus: string;
 };
 
 export function newSessionToken() {
@@ -51,13 +55,24 @@ export async function getCurrentUserForToken(token: string | undefined): Promise
 		await db.authSession.deleteMany({ where: { id: session.id } });
 		return null;
 	}
+	if (session.user.status !== "ACTIVE") return null;
+	if (
+		session.user.approvalStatus === "PENDING" &&
+		session.user.createdAt.getTime() <= Date.now() - accountApprovalGracePeriodMs
+	) {
+		await suspendExpiredUnapprovedAccounts([session.user.id]);
+		return null;
+	}
 
 	return {
 		id: session.user.id,
 		name: session.user.name,
 		email: session.user.email,
 		phone: session.user.phone,
+		location: session.user.location,
+		category: session.user.category,
 		role: session.user.role,
+		approvalStatus: session.user.approvalStatus,
 	};
 }
 

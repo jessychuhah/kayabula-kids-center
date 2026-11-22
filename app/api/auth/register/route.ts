@@ -8,6 +8,8 @@ const registerSchema = z.object({
 	name: z.string().trim().min(2).max(100),
 	email: z.email().trim().toLowerCase().max(160),
 	phone: z.string().trim().min(5).max(40),
+	location: z.string().trim().max(120).optional().default(""),
+	category: z.enum(["SUPPORTER", "VOLUNTEER", "YOUTH_MEMBER"]).optional(),
 	password: z.string().min(10).max(128),
 	adminSetupToken: z.string().max(256).optional(),
 });
@@ -23,7 +25,7 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Check your name, email, phone and password." }, { status: 400 });
 		}
 
-		const { name, email, phone, password, adminSetupToken } = parsed.data;
+		const { name, email, phone, location, category, password, adminSetupToken } = parsed.data;
 		const settingUpAdmin = Boolean(adminSetupToken);
 		if (settingUpAdmin && !safeSecretMatch(adminSetupToken ?? "", process.env.ADMIN_SETUP_TOKEN)) {
 			return NextResponse.json({ error: "The administrator setup token is not valid." }, { status: 403 });
@@ -40,8 +42,27 @@ export async function POST(request: Request) {
 			}
 
 			return transaction.user.create({
-				data: { name, email, phone, passwordHash, role },
-				select: { id: true, name: true, email: true, phone: true, role: true },
+				data: {
+					name,
+					email,
+					phone,
+					location: location || null,
+					category,
+					passwordHash,
+					role,
+					approvalStatus: role === "ADMIN" ? "APPROVED" : "PENDING",
+					approvedAt: role === "ADMIN" ? new Date() : null,
+				},
+				select: {
+					id: true,
+					name: true,
+					email: true,
+					phone: true,
+					location: true,
+					category: true,
+					role: true,
+					approvalStatus: true,
+				},
 			});
 		}, { isolationLevel: "Serializable" });
 

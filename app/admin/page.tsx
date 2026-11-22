@@ -12,6 +12,8 @@ type DashboardData = {
 		successfulCount: number;
 		pendingCount: number;
 		userCount: number;
+		pendingApprovalCount: number;
+		youthSupported: number;
 	};
 	recentDonations: Array<{
 		id: string;
@@ -87,6 +89,9 @@ export default function AdminDashboard() {
 					<p>WORKSPACE</p>
 					<a className="active" href="#overview" onClick={() => setSidebarOpen(false)}><span className="nav-icon grid" aria-hidden="true"></span>Overview</a>
 					<a href="#donations" onClick={() => setSidebarOpen(false)}><span className="nav-icon wallet" aria-hidden="true"></span>Donations</a>
+					<Link href="/admin/users" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>Users</Link>
+					<Link href="/admin/content" onClick={() => setSidebarOpen(false)}><span className="nav-icon pages" aria-hidden="true"></span>Content</Link>
+					<Link href="/admin/inbox" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Support inbox</Link>
 				</nav>
 				<div className="admin-sidebar-bottom">
 					<Link className="admin-home-link" href="/">View public website ↗</Link>
@@ -122,8 +127,8 @@ export default function AdminDashboard() {
 							<section className="overview-grid" aria-label="Live overview statistics">
 								<article className="overview-card"><div className="metric-icon purple"><span></span></div><div><p>Successful donations</p><strong>{formatAmount(data.summary.successfulAmount)}</strong><span className="metric-change">{data.summary.successfulCount} confirmed</span></div></article>
 								<article className="overview-card"><div className="metric-icon gold"><span></span></div><div><p>Pending donations</p><strong>{data.summary.pendingCount.toLocaleString()}</strong><span className="metric-change amber">Awaiting confirmation</span></div></article>
-								<article className="overview-card"><div className="metric-icon teal"><span></span></div><div><p>Registered accounts</p><strong>{data.summary.userCount.toLocaleString()}</strong><span className="metric-change">Member accounts</span></div></article>
-								<article className="overview-card"><div className="metric-icon cream"><span></span></div><div><p>Young people reached</p><strong>30+</strong><span className="metric-change">Community impact</span></div></article>
+								<Link className="overview-card overview-card-link" href="/admin/users"><div className="metric-icon teal"><span></span></div><div><p>Registered accounts</p><strong>{data.summary.userCount.toLocaleString()}</strong><span className="metric-change">{data.summary.pendingApprovalCount} awaiting approval</span></div></Link>
+								<Link className="overview-card overview-card-link" href="/admin/content"><div className="metric-icon cream"><span></span></div><div><p>Young people reached</p><strong>{data.summary.youthSupported.toLocaleString()}</strong><span className="metric-change">Community impact</span></div></Link>
 							</section>
 
 							<section className="table-card admin-live-table" id="donations" aria-labelledby="donations-title">

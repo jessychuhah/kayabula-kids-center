@@ -16,16 +16,24 @@ model ContactSubmission {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  phone        String
-  passwordHash String
-  role         String        @default("USER")
-  sessions     AuthSession[]
-  donations    Donation[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                  String               @id @default(cuid())
+  name                String
+  email               String               @unique
+  phone               String
+  location            String?
+  category            String?
+  passwordHash        String
+  role                String               @default("USER")
+  status              String               @default("ACTIVE")
+  approvalStatus      String               @default("APPROVED")
+  approvedAt          DateTime?
+  lastLoginAt         DateTime?
+  sessions            AuthSession[]
+  donations           Donation[]
+  notifications       UserNotification[]
+  supportConversation SupportConversation?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([role, createdAt])
 }
@@ -61,4 +69,71 @@ model Donation {
   @@index([status, createdAt])
   @@index([userId, createdAt])
   @@index([providerRef])
+}
+
+model UserNotification {
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind               String
+  title              String
+  message            String
+  emailStatus        String    @default("PENDING")
+  emailAttempts      Int       @default(0)
+  emailLastAttemptAt DateTime?
+  emailSentAt        DateTime?
+  emailError         String?
+  readAt             DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([emailStatus, createdAt])
+}
+
+model SiteSettings {
+  id                String   @id @default("default")
+  youthSupported    Int      @default(20)
+  familiesSupported Int      @default(23)
+  villagesReached   Int      @default(10)
+  whatsappNumber    String   @default("256760597356")
+  updatedAt         DateTime @updatedAt
+}
+
+model Advertisement {
+  id        String   @id @default(cuid())
+  title     String
+  handle    String?
+  text      String?
+  mediaType String?
+  mediaUrl  String?
+  mediaKey  String?
+  targetUrl String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SupportConversation {
+  id        String           @id @default(cuid())
+  userId    String           @unique
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  SupportMessage[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([updatedAt])
+}
+
+model SupportMessage {
+  id             String              @id @default(cuid())
+  conversationId String
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderRole     String
+  body           String
+  createdAt      DateTime            @default(now())
+
+  @@index([conversationId, createdAt])
 }

@@ -9,7 +9,17 @@ type AccountUser = {
 	name: string;
 	email: string;
 	phone: string;
+	location: string | null;
+	category: string | null;
 	role: string;
+	approvalStatus: string;
+};
+
+type AccountNotification = {
+	id: string;
+	title: string;
+	message: string;
+	createdAt: string;
 };
 
 export default function AccountPage() {
@@ -19,6 +29,7 @@ export default function AccountPage() {
 	const [registering, setRegistering] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState("");
+	const [notifications, setNotifications] = useState<AccountNotification[]>([]);
 
 	useEffect(() => {
 		fetch("/api/auth/session", { cache: "no-store" })
@@ -26,6 +37,12 @@ export default function AccountPage() {
 				const data = await response.json();
 				if (!response.ok) throw new Error(data.error || "Unable to load your account.");
 				setUser(data.user);
+				if (data.user) {
+					const notificationResponse = await fetch("/api/account/notifications", { cache: "no-store" });
+					const notificationData = await notificationResponse.json();
+					if (!notificationResponse.ok) throw new Error(notificationData.error || "Unable to load account notifications.");
+					setNotifications(notificationData.notifications);
+				}
 			})
 			.catch((requestError: unknown) => {
 				setError(requestError instanceof Error ? requestError.message : "Unable to load your account.");
@@ -45,6 +62,9 @@ export default function AccountPage() {
 		if (registering) {
 			payload.name = formData.get("name") ?? "";
 			payload.phone = formData.get("phone") ?? "";
+			payload.location = formData.get("location") ?? "";
+			const category = formData.get("category");
+			if (category) payload.category = category;
 			payload.adminSetupToken = formData.get("adminSetupToken") ?? "";
 		}
 
@@ -88,9 +108,23 @@ export default function AccountPage() {
 					<>
 						<h1>Welcome, {user.name}</h1>
 						<p className="account-description">Your details are ready to use at checkout. You can also donate as a guest at any time.</p>
+						{user.approvalStatus === "PENDING" && (
+							<p className="account-approval-notice" role="status">
+								Your account is awaiting administrator approval. You can continue using the website while you wait. Accounts not approved within five days are automatically suspended.
+							</p>
+						)}
+						{notifications.map((notification) => (
+							<article className="account-notification" key={notification.id}>
+								<strong>{notification.title}</strong>
+								<p>{notification.message}</p>
+								<small>{new Date(notification.createdAt).toLocaleString()}</small>
+							</article>
+						))}
 						<div className="account-details">
 							<p><span>Email</span><strong>{user.email}</strong></p>
 							<p><span>Phone</span><strong>{user.phone}</strong></p>
+							{user.location && <p><span>Location</span><strong>{user.location}</strong></p>}
+							{user.category && <p><span>Category</span><strong>{user.category.replaceAll("_", " ").toLowerCase()}</strong></p>}
 						</div>
 						{user.role === "ADMIN" && <Link className="button button-purple account-action" href="/admin">Open admin dashboard <span>→</span></Link>}
 						<button className="button button-outline account-action" type="button" onClick={logout}>Log out</button>
@@ -106,6 +140,15 @@ export default function AccountPage() {
 								<>
 									<label>Full name<input name="name" autoComplete="name" minLength={2} maxLength={100} required /></label>
 									<label>Phone number<input name="phone" type="tel" autoComplete="tel" minLength={5} maxLength={40} required /></label>
+									<label>Location <span className="account-optional">(optional)</span><input name="location" autoComplete="address-level2" maxLength={120} /></label>
+									<label>Category <span className="account-optional">(optional)</span>
+										<select name="category" defaultValue="">
+											<option value="">Select a category</option>
+											<option value="SUPPORTER">Donor / Supporter</option>
+											<option value="VOLUNTEER">Volunteer</option>
+											<option value="YOUTH_MEMBER">Youth Member</option>
+										</select>
+									</label>
 								</>
 							)}
 							<label>Email<input name="email" type="email" autoComplete="email" maxLength={160} required /></label>

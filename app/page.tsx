@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import SupportChatWidget from "@/app/support-chat";
 
 const programs = [
 	{
@@ -30,6 +31,30 @@ type AccountUser = {
 	role: string;
 };
 
+type SiteContent = {
+	youthSupported: number;
+	familiesSupported: number;
+	villagesReached: number;
+	whatsappNumber: string;
+	advertisements: Array<{
+		id: string;
+		title: string;
+		handle: string | null;
+		text: string | null;
+		mediaType: string | null;
+		mediaUrl: string | null;
+		targetUrl: string | null;
+	}>;
+};
+
+const defaultSiteContent: SiteContent = {
+	youthSupported: 20,
+	familiesSupported: 23,
+	villagesReached: 10,
+	whatsappNumber: "256760597356",
+	advertisements: [],
+};
+
 export default function Home() {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [loggedInUser, setLoggedInUser] = useState<AccountUser | null>(null);
@@ -44,6 +69,8 @@ export default function Home() {
 	const [donorName, setDonorName] = useState("");
 	const [donorEmail, setDonorEmail] = useState("");
 	const [donorPhone, setDonorPhone] = useState("");
+	const [siteContent, setSiteContent] = useState(defaultSiteContent);
+	const [siteContentError, setSiteContentError] = useState("");
 
 	useEffect(() => {
 		fetch("/api/auth/session", { cache: "no-store" })
@@ -54,6 +81,20 @@ export default function Home() {
 			})
 			.catch(() => {
 				setLoggedInUser(null);
+			});
+	}, []);
+
+	useEffect(() => {
+		fetch("/api/site", { cache: "no-store" })
+			.then(async (response) => {
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error || "Unable to load current community details.");
+				setSiteContent(result as SiteContent);
+				setSiteContentError("");
+			})
+			.catch((error: unknown) => {
+				console.error("Unable to load public site content.", error);
+				setSiteContentError("Live community details are temporarily unavailable.");
 			});
 	}, []);
 
@@ -149,9 +190,10 @@ export default function Home() {
 		const subject = data.get("subject");
 		const message = data.get("message");
 		const text = `Hello Kayabula Kids Centre,\n\nName: ${name}\nContact: ${contact}\nSubject: ${subject}\n\n${message}`;
+		const phoneNumber = siteContent.whatsappNumber.replace(/\D/g, "");
 		setSent(true);
 		window.open(
-			`https://wa.me/256760597356?text=${encodeURIComponent(text)}`,
+			`https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`,
 			"_blank",
 			"noopener,noreferrer"
 		);
@@ -283,11 +325,47 @@ export default function Home() {
 
 				<section className="impact-strip" id="impact" aria-label="Our impact">
 					<div className="impact-inner">
-						<div className="impact-stat"><strong>20</strong><span>young people<br />supported</span></div>
-						<div className="impact-stat"><strong>13</strong><span>families<br />supported</span></div>
-						<div className="impact-stat"><strong>10</strong><span>villages reached</span></div>
+						<div className="impact-stat"><strong>{siteContent.youthSupported.toLocaleString()}</strong><span>young people<br />supported</span></div>
+						<div className="impact-stat"><strong>{siteContent.familiesSupported.toLocaleString()}</strong><span>families<br />supported</span></div>
+						<div className="impact-stat"><strong>{siteContent.villagesReached.toLocaleString()}</strong><span>villages reached</span></div>
 					</div>
+					{siteContentError && <p className="impact-live-error" role="status">{siteContentError}</p>}
 				</section>
+
+				{siteContent.advertisements.length > 0 && (
+					<section className="advertisement-section" aria-labelledby="advertisements-title">
+						<div className="advertisement-inner">
+							<p className="section-kicker">Community noticeboard</p>
+							<h2 id="advertisements-title">From our partners</h2>
+							<div className="advertisement-grid">
+								{siteContent.advertisements.map((advertisement) => {
+									const content = (
+										<>
+											{advertisement.mediaUrl && advertisement.mediaType === "VIDEO" ? (
+												<video src={advertisement.mediaUrl} controls playsInline preload="metadata" />
+											) : advertisement.mediaUrl ? (
+												<Image src={advertisement.mediaUrl} alt={advertisement.title} width={800} height={450} unoptimized />
+											) : null}
+											<div>
+												<h3>{advertisement.title}</h3>
+												{advertisement.handle && <span className="advertisement-handle">{advertisement.handle}</span>}
+												{advertisement.text && <p>{advertisement.text}</p>}
+												{advertisement.targetUrl && <span className="advertisement-link">Learn more ↗</span>}
+											</div>
+										</>
+									);
+									return advertisement.targetUrl ? (
+										<a className="advertisement-card" href={advertisement.targetUrl} key={advertisement.id} target="_blank" rel="noreferrer">
+											{content}
+										</a>
+									) : (
+										<article className="advertisement-card" key={advertisement.id}>{content}</article>
+									);
+								})}
+							</div>
+						</div>
+					</section>
+				)}
 
 				<section className="about section" id="about">
 					<div className="content-grid">
@@ -501,7 +579,7 @@ export default function Home() {
 							<div className="contact-list">
 								<div>
 									<small>CALL OR WHATSAPP</small>
-									<a href="tel:+256760597356">0760 597356</a>
+									<a href={`tel:+${siteContent.whatsappNumber.replace(/\D/g, "")}`}>+{siteContent.whatsappNumber.replace(/\D/g, "")}</a>
 								</div>
 								<div>
 									<small>EMAIL</small>
@@ -598,13 +676,14 @@ export default function Home() {
 
 			<a
 				className="whatsapp-float"
-				href="https://wa.me/256760597356"
+				href={`https://wa.me/${siteContent.whatsappNumber.replace(/\D/g, "")}`}
 				target="_blank"
 				rel="noreferrer"
 				aria-label="Chat on WhatsApp"
 			>
 				<span>WA</span>
 			</a>
+			<SupportChatWidget authenticated={Boolean(loggedInUser)} />
 
 			{paymentModalOpen && (
 				<div className="payment-modal-backdrop" role="presentation" onMouseDown={(event) => {
