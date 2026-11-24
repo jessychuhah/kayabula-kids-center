@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { deliverPendingApprovalEmails } from "@/lib/approval-email";
-import { getCurrentUserFromRequest, isSameOrigin } from "@/lib/auth";
+import { getCurrentUserFromRequest, isSameOrigin, isStaffUser } from "@/lib/auth";
 import { getPrismaClient } from "@/lib/prisma";
 
 const userFields = {
@@ -39,7 +39,7 @@ async function requireAdministrator(request: Request) {
 	if (!user) {
 		return { response: NextResponse.json({ error: "Please log in to continue." }, { status: 401 }) };
 	}
-	if (user.role !== "ADMIN") {
+	if (!isStaffUser(user)) {
 		return { response: NextResponse.json({ error: "Administrator access is required." }, { status: 403 }) };
 	}
 	return { user };
@@ -51,6 +51,7 @@ export async function GET(request: Request) {
 		if ("response" in auth) return auth.response;
 
 		const users = await getPrismaClient().user.findMany({
+			where: auth.user.role === "OWNER" ? undefined : { role: { not: "OWNER" } },
 			orderBy: { createdAt: "desc" },
 			select: {
 				id: true,
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
 				phone: true,
 				location: true,
 				category: true,
+				profileImageUrl: true,
 				role: true,
 				status: true,
 				approvalStatus: true,
@@ -68,7 +70,7 @@ export async function GET(request: Request) {
 			},
 		});
 		return NextResponse.json({
-			user: { id: auth.user.id, name: auth.user.name, email: auth.user.email },
+			user: { id: auth.user.id, name: auth.user.name, email: auth.user.email, role: auth.user.role, profileImageUrl: auth.user.profileImageUrl },
 			users,
 		});
 	} catch (error) {
@@ -92,6 +94,9 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Check the account details and use a password of at least 10 characters." }, { status: 400 });
 		}
 		const { name, email, phone, location, category, role, password } = parsed.data;
+		if (role === "ADMIN" && auth.user.role !== "OWNER") {
+			return NextResponse.json({ error: "Only the owner can create administrator accounts." }, { status: 403 });
+		}
 		const passwordHash = await hash(password, 12);
 		const user = await getPrismaClient().user.create({
 			data: { name, email, phone, location: location || null, category, role, passwordHash, approvalStatus: "APPROVED", approvedAt: new Date() },
@@ -132,6 +137,9 @@ export async function PATCH(request: Request) {
 				select: { id: true, role: true, status: true, approvalStatus: true },
 			});
 			if (!target) throw new Error("USER_NOT_FOUND");
+			if (target.role === "OWNER") throw new Error("CANNOT_MANAGE_OWNER");
+			if (auth.user.role !== "OWNER" && target.role === "ADMIN") throw new Error("OWNER_ACCESS_REQUIRED");
+			if (auth.user.role !== "OWNER" && changes.role === "ADMIN") throw new Error("OWNER_ACCESS_REQUIRED");
 			if (target.approvalStatus === "APPROVED" && changes.approvalStatus === "PENDING") {
 				throw new Error("CANNOT_REVOKE_APPROVAL");
 			}
@@ -198,6 +206,12 @@ export async function PATCH(request: Request) {
 		if (error instanceof Error && error.message === "USER_NOT_FOUND") {
 			return NextResponse.json({ error: "That account no longer exists." }, { status: 404 });
 		}
+		if (error instanceof Error && error.message === "CANNOT_MANAGE_OWNER") {
+			return NextResponse.json({ error: "The owner account cannot be changed from the user directory." }, { status: 409 });
+		}
+		if (error instanceof Error && error.message === "OWNER_ACCESS_REQUIRED") {
+			return NextResponse.json({ error: "Only the owner can manage administrator accounts." }, { status: 403 });
+		}
 		if (error instanceof Error && error.message === "CANNOT_DISABLE_SELF") {
 			return NextResponse.json({ error: "You cannot suspend or demote your own administrator account." }, { status: 409 });
 		}
@@ -238,6 +252,8 @@ export async function DELETE(request: Request) {
 				select: { id: true, role: true, status: true },
 			});
 			if (!target) throw new Error("USER_NOT_FOUND");
+			if (target.role === "OWNER") throw new Error("CANNOT_MANAGE_OWNER");
+			if (auth.user.role !== "OWNER" && target.role === "ADMIN") throw new Error("OWNER_ACCESS_REQUIRED");
 			if (target.role === "ADMIN" && target.status === "ACTIVE") {
 				const activeAdminCount = await transaction.user.count({ where: { role: "ADMIN", status: "ACTIVE" } });
 				if (activeAdminCount <= 1) throw new Error("LAST_ACTIVE_ADMIN");
@@ -252,6 +268,12 @@ export async function DELETE(request: Request) {
 		}
 		if (error instanceof Error && error.message === "USER_NOT_FOUND") {
 			return NextResponse.json({ error: "That account no longer exists." }, { status: 404 });
+		}
+		if (error instanceof Error && error.message === "CANNOT_MANAGE_OWNER") {
+			return NextResponse.json({ error: "The owner account cannot be deleted from the user directory." }, { status: 409 });
+		}
+		if (error instanceof Error && error.message === "OWNER_ACCESS_REQUIRED") {
+			return NextResponse.json({ error: "Only the owner can manage administrator accounts." }, { status: 403 });
 		}
 		if (error instanceof Error && error.message === "LAST_ACTIVE_ADMIN") {
 			return NextResponse.json({ error: "The last active administrator cannot be deleted." }, { status: 409 });

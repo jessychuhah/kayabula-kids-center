@@ -8,6 +8,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 type UserRecord = {
 	id: string;
 	name: string;
+	profileImageUrl: string | null;
 	email: string;
 	phone: string;
 	location: string | null;
@@ -58,7 +59,7 @@ function approvalNotice(result: { approvalEmailConfigured: boolean; approvalEmai
 export default function AdminUsersPage() {
 	const router = useRouter();
 	const [users, setUsers] = useState<UserRecord[]>([]);
-	const [admin, setAdmin] = useState<{ name: string; email: string } | null>(null);
+	const [admin, setAdmin] = useState<{ id: string; name: string; email: string; role: string; profileImageUrl: string | null } | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [search, setSearch] = useState("");
@@ -81,7 +82,7 @@ export default function AdminUsersPage() {
 					return null;
 				}
 				if (!response.ok) throw new Error(result.error || "Unable to load users.");
-				return result as { user: { name: string; email: string }; users: UserRecord[] };
+				return result as { user: { id: string; name: string; email: string; role: string; profileImageUrl: string | null }; users: UserRecord[] };
 			})
 			.then((result) => {
 				if (active && result) {
@@ -232,7 +233,7 @@ export default function AdminUsersPage() {
 			<aside className={sidebarOpen ? "admin-sidebar open" : "admin-sidebar"}>
 				<div className="admin-brand">
 					<Image src="/assets/logo.jpeg" alt="Kayabula Kids Centre" width={48} height={48} />
-					<div><strong>KAYABULA</strong><span>Admin Centre</span></div>
+					<div><strong>KAYABULA</strong><span>{admin?.role === "OWNER" ? "Owner Centre" : "Admin Centre"}</span></div>
 					<button type="button" className="sidebar-close" aria-label="Close menu" onClick={() => setSidebarOpen(false)}>×</button>
 				</div>
 				<nav className="admin-nav" aria-label="Admin navigation">
@@ -242,12 +243,17 @@ export default function AdminUsersPage() {
 					<Link className="active" href="/admin/users" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>Users</Link>
 					<Link href="/admin/content" onClick={() => setSidebarOpen(false)}><span className="nav-icon pages" aria-hidden="true"></span>Content</Link>
 					<Link href="/admin/inbox" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Support inbox</Link>
+					<Link href="/admin/communications" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Team &amp; updates</Link>
+					<Link href="/account" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>My profile</Link>
+					<Link href="/account/security" onClick={() => setSidebarOpen(false)}><span className="nav-icon settings" aria-hidden="true"></span>Security</Link>
 				</nav>
 				<div className="admin-sidebar-bottom">
 					<Link className="admin-home-link" href="/">View public website ↗</Link>
 					{admin && <div className="admin-profile">
-						<div className="profile-avatar">{admin.name.trim().slice(0, 1).toUpperCase()}</div>
-						<div><strong>{admin.name}</strong><span>Administrator</span></div>
+						<div className="profile-avatar">{admin.profileImageUrl
+							? <Image src={admin.profileImageUrl} alt="" width={36} height={36} unoptimized />
+							: admin.name.trim().slice(0, 1).toUpperCase()}</div>
+						<div><strong>{admin.name}</strong><span>{admin.role === "OWNER" ? "Owner" : "Administrator"}</span></div>
 						<button type="button" aria-label="Log out" onClick={logout}>↪</button>
 					</div>}
 				</div>
@@ -300,23 +306,28 @@ export default function AdminUsersPage() {
 									</tr></thead>
 									<tbody>{filteredUsers.map((user) => (
 										<tr key={user.id}>
-											<td><strong>{user.name}</strong></td>
+											<td><div className="user-name-with-avatar">
+												<span className="user-directory-avatar">{user.profileImageUrl
+													? <Image src={user.profileImageUrl} alt="" width={34} height={34} unoptimized />
+													: user.name.trim().slice(0, 1).toUpperCase()}</span>
+												<strong>{user.name}</strong>
+											</div></td>
 											<td><span>{user.email}</span><small>{user.phone}</small></td>
 											<td><span>{user.location || "—"}</span><small>{displayCategory(user.category)}</small></td>
-											<td>{user.role === "ADMIN" ? "Admin" : "Member"}</td>
+											<td>{user.role === "OWNER" ? "Owner" : user.role === "ADMIN" ? "Admin" : "Member"}</td>
 											<td><span className={`user-status ${user.status.toLowerCase()}`}>{user.status === "ACTIVE" ? "Active" : "Suspended"}</span></td>
 											<td><span className={`approval-status ${user.approvalStatus.toLowerCase()}`}>{user.approvalStatus === "APPROVED" ? "Approved" : "Pending"}</span></td>
 											<td>{user._count.donations}</td>
 											<td>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}</td>
 											<td>{new Date(user.createdAt).toLocaleDateString()}</td>
-											<td><details className="user-row-actions">
+											<td>{user.role !== "OWNER" && user.id !== admin?.id ? <details className="user-row-actions">
 												<summary aria-label={`Actions for ${user.name}`}>···</summary>
 												<div>
 													{user.approvalStatus === "PENDING" && <button type="button" onClick={() => approveUser(user)}>Approve &amp; notify</button>}
 													<button type="button" onClick={() => startEdit(user)}>Edit details</button>
 													<button type="button" className="danger-action" onClick={() => deleteAccount(user)}>Delete account</button>
 												</div>
-											</details></td>
+											</details> : "—"}</td>
 										</tr>
 									))}</tbody>
 								</table>
@@ -346,7 +357,7 @@ export default function AdminUsersPage() {
 							</select>
 						</label>
 						<label>Role<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-							<option value="USER">Member</option><option value="ADMIN">Admin</option>
+							<option value="USER">Member</option>{admin?.role === "OWNER" && <option value="ADMIN">Admin</option>}
 						</select></label>
 						{editingUser ? (
 							<>

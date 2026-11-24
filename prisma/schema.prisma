@@ -22,16 +22,25 @@ model User {
   phone               String
   location            String?
   category            String?
+  profileImageUrl     String?
+  profileImageKey     String?
   passwordHash        String
   role                String               @default("USER")
   status              String               @default("ACTIVE")
   approvalStatus      String               @default("APPROVED")
   approvedAt          DateTime?
   lastLoginAt         DateTime?
+  lastActiveAt        DateTime?
   sessions            AuthSession[]
   donations           Donation[]
   notifications       UserNotification[]
   supportConversation SupportConversation?
+  staffMessages       StaffMessage[]
+  siteUpdates         SiteUpdate[]
+  communityMessages   CommunityMessage[]
+  directMessages      DirectMessage[]
+  directMemberships   DirectConversationMember[]
+  claimedConversations DirectConversation[] @relation("ClaimedDirectConversations")
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
@@ -100,20 +109,35 @@ model SiteSettings {
 }
 
 model Advertisement {
-  id        String   @id @default(cuid())
-  title     String
-  handle    String?
-  text      String?
-  mediaType String?
-  mediaUrl  String?
-  mediaKey  String?
-  targetUrl String?
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String               @id @default(cuid())
+  title           String
+  handle          String?
+  text            String?
+  mediaType       String?
+  mediaUrl        String?
+  mediaKey        String?
+  targetUrl       String?
+  durationSeconds Int                  @default(8)
+  isActive        Boolean              @default(true)
+  sortOrder       Int                  @default(0)
+  assets          AdvertisementMedia[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   @@index([isActive, sortOrder])
+}
+
+model AdvertisementMedia {
+  id              String        @id @default(cuid())
+  advertisementId String
+  advertisement   Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+  url             String
+  objectKey       String?
+  mediaType       String        @default("IMAGE")
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+
+  @@index([advertisementId, sortOrder])
 }
 
 model SupportConversation {
@@ -136,4 +160,104 @@ model SupportMessage {
   createdAt      DateTime            @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+model CommunityMessage {
+  id        String   @id @default(cuid())
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model DirectConversation {
+  id          String                     @id @default(cuid())
+  channel     String
+  pairKey     String                     @unique
+  claimedById String?
+  claimedBy   User?                      @relation("ClaimedDirectConversations", fields: [claimedById], references: [id], onDelete: SetNull)
+  members     DirectConversationMember[]
+  messages    DirectMessage[]
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+
+  @@index([channel, updatedAt])
+  @@index([claimedById])
+}
+
+model DirectConversationMember {
+  id             String            @id @default(cuid())
+  conversationId String
+  conversation  DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime          @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId, conversationId])
+}
+
+model DirectMessage {
+  id             String            @id @default(cuid())
+  conversationId String
+  conversation  DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime          @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model StaffMessage {
+  id         String   @id @default(cuid())
+  senderId   String?
+  sender     User?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  senderName String
+  senderRole String
+  body       String?
+  imageUrl   String?
+  imageKey   String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model SiteUpdate {
+  id         String            @id @default(cuid())
+  authorId   String?
+  author     User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorName String
+  title      String
+  body       String
+  media      SiteUpdateMedia[]
+  createdAt  DateTime          @default(now())
+
+  @@index([createdAt])
+}
+
+model SiteUpdateMedia {
+  id        String     @id @default(cuid())
+  updateId  String
+  update    SiteUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
+  url       String
+  objectKey String?
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+
+  @@index([updateId, sortOrder])
+}
+
+model PasswordResetOtp {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  sentAt     DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
 }

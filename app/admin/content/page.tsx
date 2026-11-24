@@ -21,9 +21,13 @@ type Advertisement = {
 	mediaUrl: string | null;
 	mediaKey: string | null;
 	targetUrl: string | null;
+	durationSeconds: number;
+	assets: Array<{ id: string; url: string; objectKey: string | null; mediaType: string; sortOrder: number }>;
 	isActive: boolean;
 	sortOrder: number;
 };
+
+type AdvertisementAsset = { url: string; key: string | null; mediaType: string };
 
 type AdvertisementForm = {
 	title: string;
@@ -35,6 +39,7 @@ type AdvertisementForm = {
 	targetUrl: string;
 	isActive: boolean;
 	sortOrder: string;
+	durationSeconds: string;
 };
 
 const emptyAdvertisement: AdvertisementForm = {
@@ -47,6 +52,7 @@ const emptyAdvertisement: AdvertisementForm = {
 	targetUrl: "",
 	isActive: true,
 	sortOrder: "0",
+	durationSeconds: "8",
 };
 
 export default function AdminContentPage() {
@@ -58,7 +64,7 @@ export default function AdminContentPage() {
 		whatsappNumber: "+256760597356",
 	});
 	const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
-	const [admin, setAdmin] = useState<{ name: string } | null>(null);
+	const [admin, setAdmin] = useState<{ name: string; role: string; profileImageUrl: string | null } | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [savingSettings, setSavingSettings] = useState(false);
 	const [savingAd, setSavingAd] = useState(false);
@@ -66,7 +72,8 @@ export default function AdminContentPage() {
 	const [notice, setNotice] = useState("");
 	const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
 	const [adForm, setAdForm] = useState<AdvertisementForm>(emptyAdvertisement);
-	const [mediaFile, setMediaFile] = useState<File | null>(null);
+	const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+	const [retainedAssets, setRetainedAssets] = useState<AdvertisementAsset[]>([]);
 	const [fileInputKey, setFileInputKey] = useState(0);
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -93,7 +100,7 @@ export default function AdminContentPage() {
 		])
 			.then(([session, content]) => {
 				if (active) {
-					setAdmin(session.user ? { name: session.user.name } : null);
+				setAdmin(session.user ? { name: session.user.name, role: session.user.role, profileImageUrl: session.user.profileImageUrl } : null);
 					setSettings({
 						youthSupported: String(content.settings.youthSupported),
 						familiesSupported: String(content.settings.familiesSupported),
@@ -160,8 +167,12 @@ export default function AdminContentPage() {
 			targetUrl: ad.targetUrl ?? "",
 			isActive: ad.isActive,
 			sortOrder: String(ad.sortOrder),
+			durationSeconds: String(ad.durationSeconds),
 		});
-		setMediaFile(null);
+		setRetainedAssets(ad.assets.length
+			? ad.assets.map((asset) => ({ url: asset.url, key: asset.objectKey, mediaType: asset.mediaType }))
+			: ad.mediaUrl ? [{ url: ad.mediaUrl, key: ad.mediaKey, mediaType: ad.mediaType ?? "IMAGE" }] : []);
+		setMediaFiles([]);
 		setFileInputKey((key) => key + 1);
 		setError("");
 		setNotice("");
@@ -170,7 +181,8 @@ export default function AdminContentPage() {
 	function startNewAd() {
 		setEditingAd(null);
 		setAdForm(emptyAdvertisement);
-		setMediaFile(null);
+		setRetainedAssets([]);
+		setMediaFiles([]);
 		setFileInputKey((key) => key + 1);
 		setError("");
 		setNotice("");
@@ -193,13 +205,10 @@ export default function AdminContentPage() {
 		setSavingAd(true);
 		setError("");
 		setNotice("");
-		let uploadedKey = "";
+		const uploaded: AdvertisementAsset[] = [];
 		let saved = false;
 		try {
-			let mediaUrl = adForm.mediaUrl || null;
-			let mediaKey = adForm.mediaKey || null;
-			let mediaType = adForm.mediaType || null;
-			if (mediaFile) {
+			for (const mediaFile of mediaFiles) {
 				const signatureResponse = await fetch("/api/admin/ads/upload", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -211,28 +220,31 @@ export default function AdminContentPage() {
 				});
 				const signature = await signatureResponse.json();
 				if (!signatureResponse.ok) throw new Error(signature.error || "Unable to prepare media upload.");
-				uploadedKey = signature.key;
+				uploaded.push({
+					url: signature.publicUrl,
+					key: signature.key,
+					mediaType: mediaFile.type.startsWith("video/") ? "VIDEO" : "IMAGE",
+				});
 				const uploadResponse = await fetch(signature.uploadUrl, {
 					method: "PUT",
 					headers: { "Content-Type": mediaFile.type },
 					body: mediaFile,
 				});
 				if (!uploadResponse.ok) throw new Error("Cloudflare R2 rejected the media upload. Check the bucket CORS settings.");
-				mediaUrl = signature.publicUrl;
-				mediaKey = signature.key;
-				mediaType = signature.mediaType;
 			}
 
 			const payload = {
 				title: adForm.title,
 				handle: adForm.handle.trim() || null,
 				text: adForm.text.trim() || null,
-				mediaType,
-				mediaUrl,
-				mediaKey,
+				mediaType: null,
+				mediaUrl: null,
+				mediaKey: null,
+				assets: [...retainedAssets, ...uploaded],
 				targetUrl: adForm.targetUrl.trim() || null,
 				isActive: adForm.isActive,
 				sortOrder: Number(adForm.sortOrder),
+				durationSeconds: Number(adForm.durationSeconds),
 			};
 			const response = await fetch("/api/admin/ads", {
 				method: editingAd ? "PATCH" : "POST",
@@ -249,12 +261,11 @@ export default function AdminContentPage() {
 				? "Advertisement saved, but its previous R2 file could not be removed."
 				: "Advertisement saved.");
 		} catch (saveError) {
-			if (uploadedKey && !saved) {
-				try {
-					await deleteUploadedMedia(uploadedKey);
-				} catch (cleanupError) {
-					setError(`${saveError instanceof Error ? saveError.message : "Unable to save advertisement."} ${cleanupError instanceof Error ? cleanupError.message : "Uploaded media cleanup failed."}`);
-					setSavingAd(false);
+			if (uploaded.length && !saved) {
+				const cleanupResults = await Promise.allSettled(uploaded.map((asset) => asset.key ? deleteUploadedMedia(asset.key) : Promise.resolve()));
+				const cleanupFailure = cleanupResults.find((result) => result.status === "rejected");
+				if (cleanupFailure?.status === "rejected") {
+					setError(`${saveError instanceof Error ? saveError.message : "Unable to save advertisement."} ${cleanupFailure.reason instanceof Error ? cleanupFailure.reason.message : "Uploaded media cleanup failed."}`);
 					return;
 				}
 			}
@@ -298,7 +309,7 @@ export default function AdminContentPage() {
 			<aside className={sidebarOpen ? "admin-sidebar open" : "admin-sidebar"}>
 				<div className="admin-brand">
 					<Image src="/assets/logo.jpeg" alt="Kayabula Kids Centre" width={48} height={48} />
-					<div><strong>KAYABULA</strong><span>Admin Centre</span></div>
+					<div><strong>KAYABULA</strong><span>{admin?.role === "OWNER" ? "Owner Centre" : "Admin Centre"}</span></div>
 					<button type="button" className="sidebar-close" aria-label="Close menu" onClick={() => setSidebarOpen(false)}>×</button>
 				</div>
 				<nav className="admin-nav" aria-label="Admin navigation">
@@ -308,12 +319,17 @@ export default function AdminContentPage() {
 					<Link href="/admin/users" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>Users</Link>
 					<Link className="active" href="/admin/content" onClick={() => setSidebarOpen(false)}><span className="nav-icon pages" aria-hidden="true"></span>Content</Link>
 					<Link href="/admin/inbox" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Support inbox</Link>
+					<Link href="/admin/communications" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Team &amp; updates</Link>
+					<Link href="/account" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>My profile</Link>
+					<Link href="/account/security" onClick={() => setSidebarOpen(false)}><span className="nav-icon settings" aria-hidden="true"></span>Security</Link>
 				</nav>
 				<div className="admin-sidebar-bottom">
 					<Link className="admin-home-link" href="/">View public website ↗</Link>
 					{admin && <div className="admin-profile">
-						<div className="profile-avatar">{admin.name.trim().slice(0, 1).toUpperCase()}</div>
-						<div><strong>{admin.name}</strong><span>Administrator</span></div>
+						<div className="profile-avatar">{admin.profileImageUrl
+							? <Image src={admin.profileImageUrl} alt="" width={36} height={36} unoptimized />
+							: admin.name.trim().slice(0, 1).toUpperCase()}</div>
+						<div><strong>{admin.name}</strong><span>{admin.role === "OWNER" ? "Owner" : "Administrator"}</span></div>
 						<button type="button" aria-label="Log out" onClick={logout}>↪</button>
 					</div>}
 				</div>
@@ -347,17 +363,30 @@ export default function AdminContentPage() {
 									<div><p>R2-STORED MEDIA</p><h2>Advertising noticeboard</h2></div>
 									<span className="admin-live-label">Images, videos, text and links</span>
 								</div>
-								<p className="content-helper">Active advertisements appear below the impact totals on the public homepage. Media uploads need Cloudflare R2 credentials, a public asset URL, and bucket CORS configured for browser uploads. Image and video files are limited to 100 MB.</p>
+								<p className="content-helper">Active advertisements rotate in a compact carousel below the impact totals. Administrators may upload up to ten images or videos per advertisement; the owner can manage advertisement details but cannot upload media.</p>
 								<div className="advertisement-admin-layout">
 									<form className="advertisement-admin-form" onSubmit={saveAdvertisement}>
 										<h3>{editingAd ? "Edit advertisement" : "Add advertisement"}</h3>
 										<label>Title<input value={adForm.title} onChange={(event) => setAdForm({ ...adForm, title: event.target.value })} minLength={2} maxLength={120} required /></label>
 										<label>Advertiser / social handle (optional)<input value={adForm.handle} onChange={(event) => setAdForm({ ...adForm, handle: event.target.value })} maxLength={100} placeholder="@partner" /></label>
 										<label>Text<textarea value={adForm.text} onChange={(event) => setAdForm({ ...adForm, text: event.target.value })} rows={4} maxLength={2000} placeholder="Optional supporting message" /></label>
-										<label>Image or video (optional)<input key={fileInputKey} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" onChange={(event) => setMediaFile(event.target.files?.[0] ?? null)} /></label>
-										{adForm.mediaUrl && <div className="ad-current-media"><span>Current {adForm.mediaType?.toLowerCase()} attached</span><button type="button" onClick={() => setAdForm({ ...adForm, mediaUrl: "", mediaKey: "", mediaType: "" })}>Remove media</button></div>}
+										<label>Images or videos (optional)<input key={fileInputKey} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" multiple disabled={admin?.role !== "ADMIN"} onChange={(event) => {
+											const files = Array.from(event.target.files ?? []);
+											if (files.length > 10 || retainedAssets.length + files.length > 10) {
+												setError("An advertisement can contain up to ten media files in total.");
+												setMediaFiles([]);
+												event.target.value = "";
+												return;
+											}
+											setError("");
+											setMediaFiles(files);
+										}} /></label>
+										{admin?.role !== "ADMIN" && <small className="content-helper">Only administrators may upload advertising media.</small>}
+										{retainedAssets.map((asset, index) => <div className="ad-current-media" key={`${asset.key ?? asset.url}-${index}`}><span>Attached {asset.mediaType.toLowerCase()} {index + 1}</span><button type="button" onClick={() => setRetainedAssets((current) => current.filter((_, assetIndex) => assetIndex !== index))}>Remove</button></div>)}
+										{mediaFiles.length > 0 && <p className="selected-file">{mediaFiles.length} media file{mediaFiles.length === 1 ? "" : "s"} selected</p>}
 										<label>Link URL (optional)<input type="url" value={adForm.targetUrl} onChange={(event) => setAdForm({ ...adForm, targetUrl: event.target.value })} placeholder="https://example.org" /></label>
 										<label>Display order<input type="number" min="0" max="10000" value={adForm.sortOrder} onChange={(event) => setAdForm({ ...adForm, sortOrder: event.target.value })} /></label>
+										<label>Display duration (seconds)<input type="number" min="2" max="300" value={adForm.durationSeconds} onChange={(event) => setAdForm({ ...adForm, durationSeconds: event.target.value })} required /></label>
 										<label className="ad-active-control"><input type="checkbox" checked={adForm.isActive} onChange={(event) => setAdForm({ ...adForm, isActive: event.target.checked })} />Show on public homepage</label>
 										<div className="user-modal-actions">
 											{editingAd && <button type="button" className="button button-outline" onClick={startNewAd}>Cancel edit</button>}
@@ -367,8 +396,8 @@ export default function AdminContentPage() {
 									<div className="advertisement-admin-list">
 										{advertisements.length ? advertisements.map((ad) => (
 											<article key={ad.id}>
-												<div><strong>{ad.title}</strong><span>{ad.isActive ? "Visible" : "Hidden"} · order {ad.sortOrder}</span></div>
-												<p>{ad.text || (ad.mediaType ? `${ad.mediaType.toLowerCase()} advertisement` : "No text")}</p>
+												<div><strong>{ad.title}</strong><span>{ad.isActive ? "Visible" : "Hidden"} · order {ad.sortOrder} · {ad.durationSeconds}s · {ad.assets.length || (ad.mediaUrl ? 1 : 0)} media</span></div>
+												<p>{ad.text || (ad.assets.length || ad.mediaType ? "Media advertisement" : "No text")}</p>
 												<div className="advertisement-admin-actions">
 													<button type="button" onClick={() => startEdit(ad)}>Edit</button>
 													<button type="button" className="danger-action" onClick={() => removeAdvertisement(ad)}>Delete</button>

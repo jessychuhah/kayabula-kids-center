@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isStaffUser } from "@/lib/auth";
+import PresenceHeartbeat from "@/app/admin/presence-heartbeat";
 
 export default function AdminLayout({
 	children,
@@ -17,6 +18,6 @@ async function RequireAdministrator({
 }: Readonly<{ children: React.ReactNode }>) {
 	const user = await getCurrentUser();
 	if (!user) redirect("/account?next=%2Fadmin");
-	if (user.role !== "ADMIN") redirect("/");
-	return children;
+	if (!isStaffUser(user)) redirect("/");
+	return <>{children}<PresenceHeartbeat /></>;
 }

@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import DashboardCharts from "@/app/admin/dashboard-charts";
 
 type DashboardData = {
-	user: { name: string; email: string };
+	user: { name: string; email: string; role: string; profileImageUrl: string | null };
 	summary: {
 		successfulAmount: number;
 		successfulCount: number;
@@ -14,6 +15,10 @@ type DashboardData = {
 		userCount: number;
 		pendingApprovalCount: number;
 		youthSupported: number;
+	};
+	analytics: {
+		monthlyDonations: Array<{ label: string; amount: number }>;
+		donationStatuses: Array<{ status: string; count: number }>;
 	};
 	recentDonations: Array<{
 		id: string;
@@ -49,6 +54,10 @@ export default function AdminDashboard() {
 					return null;
 				}
 				if (!response.ok) throw new Error(result.error || "Unable to load dashboard.");
+				if (result.user.role === "OWNER") {
+					router.replace("/owner");
+					return null;
+				}
 				return result as DashboardData;
 			})
 			.then((result) => {
@@ -92,11 +101,16 @@ export default function AdminDashboard() {
 					<Link href="/admin/users" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>Users</Link>
 					<Link href="/admin/content" onClick={() => setSidebarOpen(false)}><span className="nav-icon pages" aria-hidden="true"></span>Content</Link>
 					<Link href="/admin/inbox" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Support inbox</Link>
+					<Link href="/admin/communications" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Team &amp; updates</Link>
+					<Link href="/account" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>My profile</Link>
+					<Link href="/account/security" onClick={() => setSidebarOpen(false)}><span className="nav-icon settings" aria-hidden="true"></span>Security</Link>
 				</nav>
 				<div className="admin-sidebar-bottom">
 					<Link className="admin-home-link" href="/">View public website ↗</Link>
 					{data && <div className="admin-profile">
-						<div className="profile-avatar">{data.user.name.trim().slice(0, 1).toUpperCase()}</div>
+						<div className="profile-avatar">{data.user.profileImageUrl
+							? <Image src={data.user.profileImageUrl} alt="" width={36} height={36} unoptimized />
+							: data.user.name.trim().slice(0, 1).toUpperCase()}</div>
 						<div><strong>{data.user.name}</strong><span>Administrator</span></div>
 						<button type="button" aria-label="Log out" onClick={logout}>↪</button>
 					</div>}
@@ -130,6 +144,7 @@ export default function AdminDashboard() {
 								<Link className="overview-card overview-card-link" href="/admin/users"><div className="metric-icon teal"><span></span></div><div><p>Registered accounts</p><strong>{data.summary.userCount.toLocaleString()}</strong><span className="metric-change">{data.summary.pendingApprovalCount} awaiting approval</span></div></Link>
 								<Link className="overview-card overview-card-link" href="/admin/content"><div className="metric-icon cream"><span></span></div><div><p>Young people reached</p><strong>{data.summary.youthSupported.toLocaleString()}</strong><span className="metric-change">Community impact</span></div></Link>
 							</section>
+							<DashboardCharts analytics={data.analytics} />
 
 							<section className="table-card admin-live-table" id="donations" aria-labelledby="donations-title">
 								<div className="card-heading">

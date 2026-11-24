@@ -50,6 +50,7 @@ export async function POST(request: Request) {
 				phone: user.phone,
 				location: user.location,
 				category: user.category,
+				profileImageUrl: user.profileImageUrl,
 				role: user.role,
 				approvalStatus: user.approvalStatus,
 			},

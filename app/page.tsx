@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import SupportChatWidget from "@/app/support-chat";
 
 const programs = [
@@ -29,6 +29,7 @@ type AccountUser = {
 	email: string;
 	phone: string;
 	role: string;
+	profileImageUrl: string | null;
 };
 
 type SiteContent = {
@@ -44,7 +45,24 @@ type SiteContent = {
 		mediaType: string | null;
 		mediaUrl: string | null;
 		targetUrl: string | null;
+		durationSeconds: number;
+		assets: Array<{
+			id: string;
+			url: string;
+			mediaType: string;
+		}>;
 	}>;
+};
+
+type AdvertisementSlide = {
+	key: string;
+	title: string;
+	handle: string | null;
+	text: string | null;
+	mediaType: string | null;
+	mediaUrl: string | null;
+	targetUrl: string | null;
+	durationSeconds: number;
 };
 
 const defaultSiteContent: SiteContent = {
@@ -71,6 +89,41 @@ export default function Home() {
 	const [donorPhone, setDonorPhone] = useState("");
 	const [siteContent, setSiteContent] = useState(defaultSiteContent);
 	const [siteContentError, setSiteContentError] = useState("");
+	const [activeAdIndex, setActiveAdIndex] = useState(0);
+	const adSlides = useMemo<AdvertisementSlide[]>(() => siteContent.advertisements.flatMap((advertisement) => {
+		if (advertisement.assets.length) {
+			return advertisement.assets.map((asset) => ({
+				key: `${advertisement.id}-${asset.id}`,
+				title: advertisement.title,
+				handle: advertisement.handle,
+				text: advertisement.text,
+				mediaType: asset.mediaType,
+				mediaUrl: asset.url,
+				targetUrl: advertisement.targetUrl,
+				durationSeconds: advertisement.durationSeconds,
+			}));
+		}
+		return [{
+			key: advertisement.id,
+			title: advertisement.title,
+			handle: advertisement.handle,
+			text: advertisement.text,
+			mediaType: advertisement.mediaType,
+			mediaUrl: advertisement.mediaUrl,
+			targetUrl: advertisement.targetUrl,
+			durationSeconds: advertisement.durationSeconds,
+		}];
+	}), [siteContent.advertisements]);
+	const activeSlideIndex = activeAdIndex % Math.max(adSlides.length, 1);
+
+	useEffect(() => {
+		if (adSlides.length < 2) return;
+		const duration = Math.max(2, adSlides[activeSlideIndex]?.durationSeconds ?? 8) * 1000;
+		const timer = window.setTimeout(() => {
+			setActiveAdIndex((index) => (index + 1) % adSlides.length);
+		}, duration);
+		return () => window.clearTimeout(timer);
+	}, [activeSlideIndex, adSlides]);
 
 	useEffect(() => {
 		fetch("/api/auth/session", { cache: "no-store" })
@@ -271,6 +324,9 @@ export default function Home() {
 						{loggedInUser?.role === "ADMIN" && (
 							<a href="/admin" onClick={() => setMenuOpen(false)}>Admin dashboard</a>
 						)}
+						{loggedInUser?.role === "OWNER" && (
+							<a href="/owner" onClick={() => setMenuOpen(false)}>Owner dashboard</a>
+						)}
 						<a
 							className="nav-donate"
 							href="#donate"
@@ -333,36 +389,45 @@ export default function Home() {
 				</section>
 
 				{siteContent.advertisements.length > 0 && (
-					<section className="advertisement-section" aria-labelledby="advertisements-title">
+					<section className="advertisement-section" aria-label="Advertisements">
 						<div className="advertisement-inner">
-							<p className="section-kicker">Community noticeboard</p>
-							<h2 id="advertisements-title">From our partners</h2>
-							<div className="advertisement-grid">
-								{siteContent.advertisements.map((advertisement) => {
-									const content = (
-										<>
-											{advertisement.mediaUrl && advertisement.mediaType === "VIDEO" ? (
-												<video src={advertisement.mediaUrl} controls playsInline preload="metadata" />
-											) : advertisement.mediaUrl ? (
-												<Image src={advertisement.mediaUrl} alt={advertisement.title} width={800} height={450} unoptimized />
-											) : null}
-											<div>
-												<h3>{advertisement.title}</h3>
-												{advertisement.handle && <span className="advertisement-handle">{advertisement.handle}</span>}
-												{advertisement.text && <p>{advertisement.text}</p>}
-												{advertisement.targetUrl && <span className="advertisement-link">Learn more ↗</span>}
-											</div>
-										</>
-									);
-									return advertisement.targetUrl ? (
-										<a className="advertisement-card" href={advertisement.targetUrl} key={advertisement.id} target="_blank" rel="noreferrer">
-											{content}
-										</a>
-									) : (
-										<article className="advertisement-card" key={advertisement.id}>{content}</article>
-									);
-								})}
+							<div className="advertisement-carousel" role="group" aria-roledescription="carousel" aria-label="Advertisements">
+								{(() => {
+									const slide = adSlides[activeSlideIndex] ?? adSlides[0];
+									return <article className={slide.mediaUrl ? "advertisement-slide" : "advertisement-slide text-only"} key={slide.key}>
+										{slide.mediaUrl && (slide.mediaType === "VIDEO"
+											? <video className="advertisement-background" src={slide.mediaUrl} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />
+											: <Image className="advertisement-background" src={slide.mediaUrl} alt="" fill sizes="(max-width: 760px) 100vw, 960px" unoptimized />)}
+										<div className="advertisement-shade" />
+										{slide.targetUrl && <a
+											className="advertisement-click-layer"
+											href={slide.targetUrl}
+											target="_blank"
+											rel="noreferrer"
+											aria-label={`Learn more about ${slide.title}`}
+										/>}
+										<div className="advertisement-copy">
+											<h2>{slide.title}</h2>
+											{slide.handle && <span className="advertisement-handle">{slide.handle}</span>}
+											{slide.text && <p>{slide.text}</p>}
+										</div>
+									</article>;
+								})()}
+								{adSlides.length > 1 && <div className="advertisement-controls">
+									<button type="button" aria-label="Previous advertisement" onClick={() => setActiveAdIndex((index) => (index - 1 + adSlides.length) % adSlides.length)}>←</button>
+									<button type="button" aria-label="Next advertisement" onClick={() => setActiveAdIndex((index) => (index + 1) % adSlides.length)}>→</button>
+								</div>}
 							</div>
+							{adSlides.length > 1 && <div className="advertisement-dots" aria-label="Choose an advertisement">
+								{adSlides.map((slide, index) => <button
+									type="button"
+									key={slide.key}
+									className={index === activeSlideIndex ? "active" : ""}
+									aria-label={`Show advertisement ${index + 1}`}
+									aria-current={index === activeSlideIndex ? "true" : undefined}
+									onClick={() => setActiveAdIndex(index)}
+								/>)}
+							</div>}
 						</div>
 					</section>
 				)}

@@ -14,9 +14,16 @@ export type AuthUser = {
 	phone: string;
 	location: string | null;
 	category: string | null;
+	profileImageUrl: string | null;
 	role: string;
 	approvalStatus: string;
 };
+
+export type StaffRole = "ADMIN" | "OWNER";
+
+export function isStaffUser(user: AuthUser | null): user is AuthUser & { role: StaffRole } {
+	return user?.role === "ADMIN" || user?.role === "OWNER";
+}
 
 export function newSessionToken() {
 	return randomBytes(32).toString("base64url");
@@ -71,6 +78,7 @@ export async function getCurrentUserForToken(token: string | undefined): Promise
 		phone: session.user.phone,
 		location: session.user.location,
 		category: session.user.category,
+		profileImageUrl: session.user.profileImageUrl,
 		role: session.user.role,
 		approvalStatus: session.user.approvalStatus,
 	};

@@ -3,60 +3,115 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
-type ChatMessage = {
+type Channel = "community" | "owner" | "support";
+type Message = {
 	id: string;
-	senderRole: string;
 	body: string;
 	createdAt: string;
+	senderRole?: string;
+	senderName?: string;
+	sender?: { id: string; name: string; role: string };
+};
+type PrivateConversation = { id: string; messages: Message[] };
+
+const channelLabels: Record<Channel, string> = {
+	community: "General",
+	owner: "Private with owner",
+	support: "Support",
 };
 
 export default function SupportChatWidget({ authenticated }: { authenticated: boolean }) {
 	const [open, setOpen] = useState(false);
-	const [messages, setMessages] = useState<ChatMessage[]>([]);
+	const [channel, setChannel] = useState<Channel>("community");
+	const [role, setRole] = useState("");
+	const [messages, setMessages] = useState<Message[]>([]);
 	const [draft, setDraft] = useState("");
 	const [error, setError] = useState("");
 	const [sending, setSending] = useState(false);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [conversationId, setConversationId] = useState("");
 
 	useEffect(() => {
 		if (!open || !authenticated) return;
 		let active = true;
+		fetch("/api/auth/session", { cache: "no-store" })
+			.then(async (response) => {
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error || "Unable to check your account.");
+				if (active) setRole(result.user?.role ?? "");
+			})
+			.catch((loadError: unknown) => {
+				if (active) setError(loadError instanceof Error ? loadError.message : "Unable to check your account.");
+			});
+		return () => { active = false; };
+	}, [authenticated, open]);
+
+	useEffect(() => {
+		if (!open || !authenticated || (channel === "owner" && role !== "USER")) return;
+		let active = true;
 		const loadMessages = async () => {
 			try {
-				const response = await fetch("/api/support/chat", { cache: "no-store" });
-				const result = await response.json();
-				if (!response.ok) throw new Error(result.error || "Unable to load support messages.");
-				if (active) {
-					setMessages(result.messages);
-					setError("");
+				if (channel === "community") {
+					const response = await fetch("/api/community/chat", { cache: "no-store" });
+					const result = await response.json();
+					if (!response.ok) throw new Error(result.error || "Unable to load the general channel.");
+					if (active) setMessages(result.messages);
+				} else if (channel === "owner") {
+					const listResponse = await fetch("/api/communications/direct?channel=OWNER_USER", { cache: "no-store" });
+					const listResult = await listResponse.json();
+					if (!listResponse.ok) throw new Error(listResult.error || "Unable to load your private conversation.");
+					const list: PrivateConversation[] = listResult.conversations ?? [];
+					const currentId = conversationId || list[0]?.id || "";
+					if (!conversationId && currentId && active) setConversationId(currentId);
+					if (currentId) {
+						const response = await fetch(`/api/communications/direct?channel=OWNER_USER&conversationId=${encodeURIComponent(currentId)}`, { cache: "no-store" });
+						const result = await response.json();
+						if (!response.ok) throw new Error(result.error || "Unable to load your private conversation.");
+						if (active) setMessages(result.conversation.messages);
+					} else if (active) setMessages([]);
+				} else {
+					const response = await fetch("/api/support/chat", { cache: "no-store" });
+					const result = await response.json();
+					if (!response.ok) throw new Error(result.error || "Unable to load support messages.");
+					if (active) setMessages(result.messages);
 				}
+				if (active) setError("");
 			} catch (loadError) {
-				if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load support messages.");
+				if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load messages.");
 			}
 		};
 		void loadMessages();
-		const interval = window.setInterval(loadMessages, 5000);
+		const interval = window.setInterval(loadMessages, 6000);
 		return () => {
 			active = false;
 			window.clearInterval(interval);
 		};
-	}, [authenticated, open, refreshKey]);
+	}, [authenticated, channel, conversationId, open, role]);
 
 	async function sendMessage(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setSending(true);
 		setError("");
 		try {
-			const response = await fetch("/api/support/chat", {
+			const endpoint = channel === "community"
+				? "/api/community/chat"
+				: channel === "owner"
+					? "/api/communications/direct"
+					: "/api/support/chat";
+			const body = channel === "community"
+				? { message: draft }
+				: channel === "owner"
+					? { channel: "OWNER_USER", message: draft }
+					: { message: draft };
+			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ message: draft }),
+				body: JSON.stringify(body),
 			});
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.error || "Unable to send your message.");
-			setMessages((current) => [...current, result.message]);
+			if (channel === "owner") setConversationId(result.conversationId);
+			setMessages((current) => [...current, channel === "community" ? result.message : channel === "owner" ? result.message : result.message]);
 			setDraft("");
-			setRefreshKey((key) => key + 1);
 		} catch (sendError) {
 			setError(sendError instanceof Error ? sendError.message : "Unable to send your message.");
 		} finally {
@@ -64,27 +119,39 @@ export default function SupportChatWidget({ authenticated }: { authenticated: bo
 		}
 	}
 
+	const availableChannels: Channel[] = role === "USER" ? ["community", "owner", "support"] : ["community", "support"];
+
 	return (
-		<div className="support-chat-widget">
-			{open && <section className="support-chat-panel" aria-label="Support chat">
+		<div className={`support-chat-widget${open ? " is-open" : ""}`}>
+			{open && <section className="support-chat-panel" aria-label="Kayabula communications">
 				<header>
-					<div><strong>Chat with Kayabula</strong><span>Support and questions</span></div>
+					<div><strong>Kayabula communications</strong><span>{channel === "community" ? "Everyone can join; messages are shared" : channel === "owner" ? "Private conversation with the owner" : "Private support conversation"}</span></div>
 					<button type="button" aria-label="Close chat" onClick={() => setOpen(false)}>×</button>
 				</header>
 				{!authenticated ? (
 					<div className="support-chat-login">
-						<p>Sign in to start a private conversation with our team.</p>
+						<p>Sign in to join the general channel or start a private conversation.</p>
 						<Link className="button button-purple" href="/account">Log in or create an account</Link>
 					</div>
 				) : (
 					<>
+						<nav className="support-chat-channels" aria-label="Communication channels">
+							{availableChannels.map((item) => <button className={channel === item ? "active" : ""} type="button" key={item} onClick={() => {
+								setChannel(item);
+								setMessages([]);
+								setError("");
+							}}>{channelLabels[item]}</button>)}
+						</nav>
 						<div className="support-chat-messages" aria-live="polite">
-							{messages.length === 0 && <p className="support-chat-empty">Send a message and our team will reply here.</p>}
-							{messages.map((message) => (
-								<article className={`support-chat-message ${message.senderRole === "ADMIN" ? "from-admin" : "from-user"}`} key={message.id}>
+							{messages.length === 0 && <p className="support-chat-empty">{channel === "community" ? "Start the general conversation. Everyone in the channel can see your message." : channel === "owner" ? "Send a private message to the owner. Only you and the owner can see it." : "Send a message and our support team will reply here."}</p>}
+							{messages.map((message) => {
+								const senderRole = message.sender?.role ?? message.senderRole ?? "";
+								const senderName = message.sender?.name ?? message.senderName ?? (senderRole === "ADMIN" ? "Admin" : senderRole === "OWNER" ? "Owner" : "You");
+								return <article className={`support-chat-message ${senderRole === "USER" ? "from-user" : "from-admin"}`} key={message.id}>
+									{channel === "community" && <strong>{senderName}{senderRole ? ` · ${senderRole === "OWNER" ? "Owner" : senderRole === "ADMIN" ? "Admin" : "Member"}` : ""}</strong>}
 									<p>{message.body}</p><time>{new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
-								</article>
-							))}
+								</article>;
+							})}
 						</div>
 						<form onSubmit={sendMessage}>
 							<textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={2000} rows={2} placeholder="Write a message…" required />

@@ -4,7 +4,7 @@
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env` and set both Supabase URLs: `DATABASE_URL` to the transaction-mode pooler (port `6543`) for app queries, and `DIRECT_URL` to the session-mode pooler (port `5432`) for Prisma migrations. URL-encode special characters in the database password (for example, `@` as `%40`).
-3. Set `ADMIN_SETUP_TOKEN` to a long, random secret. Keep it private; it can only be used to create the first administrator.
+3. Configure distinct `OWNER_EMAIL` / `OWNER_PASSWORD` and `ADMIN_EMAIL` / `ADMIN_PASSWORD` values. Use passwords between 12 and 128 characters. Do not commit `.env`.
 4. For a new, empty database, apply the migrations and generate the Prisma client:
 
    ```bash
@@ -22,7 +22,17 @@ npx prisma migrate deploy
 npx prisma generate
 ```
 
-Create a regular account at `/account` to save a name, email, phone number, and location for checkout and account management. New members can use the website while awaiting approval; accounts still pending after five days are suspended. Guests can still donate without an account. To activate the administrator dashboard, create the first account with the configured administrator setup token; later attempts to use that token are rejected.
+For an existing database with no Prisma migration history, baseline the initial migration before deploying the remaining migrations:
+
+```bash
+npx prisma migrate resolve --applied 20261121200000_initial
+npx prisma migrate deploy
+npx prisma generate
+```
+
+Once migrations have been applied, run `npm run seed:accounts` once to create the configured owner and administrator. The command refuses to overwrite accounts with those emails. Admin and owner registration is not available through the public account form. Staff can change their passwords from **Security** in their dashboard.
+
+Create a regular account at `/account` to save a name, email, phone number, and location for checkout and account management. New members can use the website while awaiting approval; accounts still pending after five days are suspended. Guests can still donate without an account.
 
 The `/admin` page requires an administrator session and displays persisted donation records. Payment checkout remains unavailable until the Pesapal credentials and callback settings in `.env` are configured.
 
@@ -30,9 +40,15 @@ The `/admin` page requires an administrator session and displays persisted donat
 
 New member accounts can use the website immediately while awaiting administrator approval. Approval creates an in-app notification and queues an email through Resend. Set `RESEND_API_KEY` and a verified `EMAIL_FROM` address to deliver approval email. Vercel runs `/api/cron/pending-accounts` hourly to suspend accounts still awaiting approval after five days and retry queued approval emails; set `CRON_SECRET` in the deployment environment. Account access checks also enforce the five-day limit.
 
-Administrators can approve users, manage the homepage impact figures and WhatsApp number, and manage ads at `/admin/users` and `/admin/content`. Ad images and videos are uploaded directly to Cloudflare R2. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and the HTTPS `R2_PUBLIC_BASE_URL` in `.env`. Configure R2 CORS to allow `PUT` from the production site origin (and `http://localhost:3000` for local development), with the `Content-Type` request header. Uploads are limited to 100 MB.
+Staff can approve users, manage homepage impact figures and WhatsApp details, and manage advertisements at `/admin/users` and `/admin/content`. Administrators can upload multiple images or videos for an advertisement; each ad has its own display duration and active ads repeat continuously in the public homepage carousel. The owner can manage advertisement details but cannot upload advertising media.
 
-Signed-in members can open the floating support chat on the homepage. Administrators read and reply to conversations in `/admin/inbox`.
+Profile photos, advertising, team-channel, and member-update images are uploaded directly to Cloudflare R2. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and the HTTPS `R2_PUBLIC_BASE_URL` in `.env`. Configure R2 CORS to allow `PUT` from the production site origin (and `http://localhost:3000` for local development), with the `Content-Type` request header. Profile photos are limited to 5 MB per file, ad media to 100 MB, and communication images to 10 MB.
+
+Signed-in members can open the floating support chat on the homepage. Administrators read and reply to conversations in `/admin/inbox`. Owners and administrators share a private team channel and can publish optional-image updates for signed-in members at `/admin/communications`; members can read the updates at `/updates`.
+
+The homepage chat opens as a full-screen panel with a shared general channel, a private owner–member channel, and the existing support inbox. Owners can privately message members and contact online administrators from `/admin/communications`; admins are considered online after activity within five minutes, and messages sent with no admin online are queued for the next active admin. Administrators can also privately message other admins. Both admin and owner dashboards show donation trend and status charts.
+
+The account sign-in page includes email-code password recovery. Configure `RESEND_API_KEY` and a verified `EMAIL_FROM` sender to deliver the six-digit, ten-minute reset code. The account notification centre shows a delivery notice only; it never exposes the code.
 
 ## Getting Started
 

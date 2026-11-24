@@ -1,7 +1,7 @@
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createAuthSession, isSameOrigin, safeSecretMatch, sessionCookieName, sessionLifetimeSeconds } from "@/lib/auth";
+import { createAuthSession, isSameOrigin, sessionCookieName, sessionLifetimeSeconds } from "@/lib/auth";
 import { getPrismaClient } from "@/lib/prisma";
 
 const registerSchema = z.object({
@@ -11,7 +11,6 @@ const registerSchema = z.object({
 	location: z.string().trim().max(120).optional().default(""),
 	category: z.enum(["SUPPORTER", "VOLUNTEER", "YOUTH_MEMBER"]).optional(),
 	password: z.string().min(10).max(128),
-	adminSetupToken: z.string().max(256).optional(),
 });
 
 export async function POST(request: Request) {
@@ -25,46 +24,32 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Check your name, email, phone and password." }, { status: 400 });
 		}
 
-		const { name, email, phone, location, category, password, adminSetupToken } = parsed.data;
-		const settingUpAdmin = Boolean(adminSetupToken);
-		if (settingUpAdmin && !safeSecretMatch(adminSetupToken ?? "", process.env.ADMIN_SETUP_TOKEN)) {
-			return NextResponse.json({ error: "The administrator setup token is not valid." }, { status: 403 });
-		}
-
+		const { name, email, phone, location, category, password } = parsed.data;
 		const passwordHash = await hash(password, 12);
 		const db = getPrismaClient();
-		const user = await db.$transaction(async (transaction) => {
-			let role = "USER";
-			if (settingUpAdmin) {
-				const existingAdmin = await transaction.user.findFirst({ where: { role: "ADMIN" } });
-				if (existingAdmin) throw new Error("ADMIN_ALREADY_CONFIGURED");
-				role = "ADMIN";
-			}
-
-			return transaction.user.create({
-				data: {
-					name,
-					email,
-					phone,
-					location: location || null,
-					category,
-					passwordHash,
-					role,
-					approvalStatus: role === "ADMIN" ? "APPROVED" : "PENDING",
-					approvedAt: role === "ADMIN" ? new Date() : null,
-				},
-				select: {
-					id: true,
-					name: true,
-					email: true,
-					phone: true,
-					location: true,
-					category: true,
-					role: true,
-					approvalStatus: true,
-				},
-			});
-		}, { isolationLevel: "Serializable" });
+		const user = await db.user.create({
+			data: {
+				name,
+				email,
+				phone,
+				location: location || null,
+				category,
+				passwordHash,
+				role: "USER",
+				approvalStatus: "PENDING",
+			},
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				phone: true,
+				location: true,
+				category: true,
+				profileImageUrl: true,
+				role: true,
+				approvalStatus: true,
+			},
+		});
 
 		const session = await createAuthSession(user.id);
 		const response = NextResponse.json({ user }, { status: 201 });
@@ -80,9 +65,6 @@ export async function POST(request: Request) {
 	} catch (error) {
 		if (error instanceof SyntaxError) {
 			return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
-		}
-		if (error instanceof Error && error.message === "ADMIN_ALREADY_CONFIGURED") {
-			return NextResponse.json({ error: "An administrator account has already been set up." }, { status: 409 });
 		}
 		if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
 			return NextResponse.json({ error: "An account with that email already exists." }, { status: 409 });

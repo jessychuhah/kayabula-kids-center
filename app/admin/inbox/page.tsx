@@ -21,7 +21,7 @@ type InboxConversation = {
 
 export default function AdminInboxPage() {
 	const router = useRouter();
-	const [admin, setAdmin] = useState<{ name: string } | null>(null);
+	const [admin, setAdmin] = useState<{ name: string; role: string; profileImageUrl: string | null } | null>(null);
 	const [conversations, setConversations] = useState<InboxConversation[]>([]);
 	const [selectedId, setSelectedId] = useState("");
 	const [messages, setMessages] = useState<InboxMessage[]>([]);
@@ -50,7 +50,7 @@ export default function AdminInboxPage() {
 				}
 				if (!inboxResponse.ok) throw new Error(result.error || "Unable to load support inbox.");
 				if (active) {
-					setAdmin(session.user ? { name: session.user.name } : null);
+					setAdmin(session.user ? { name: session.user.name, role: session.user.role, profileImageUrl: session.user.profileImageUrl } : null);
 					setConversations(result.conversations);
 					if (!selectedId && result.conversations.length) {
 						setSelectedId(result.conversations[0].id);
@@ -113,7 +113,7 @@ export default function AdminInboxPage() {
 			<aside className={sidebarOpen ? "admin-sidebar open" : "admin-sidebar"}>
 				<div className="admin-brand">
 					<Image src="/assets/logo.jpeg" alt="Kayabula Kids Centre" width={48} height={48} />
-					<div><strong>KAYABULA</strong><span>Admin Centre</span></div>
+					<div><strong>KAYABULA</strong><span>{admin?.role === "OWNER" ? "Owner Centre" : "Admin Centre"}</span></div>
 					<button type="button" className="sidebar-close" aria-label="Close menu" onClick={() => setSidebarOpen(false)}>×</button>
 				</div>
 				<nav className="admin-nav" aria-label="Admin navigation">
@@ -123,12 +123,17 @@ export default function AdminInboxPage() {
 					<Link href="/admin/users" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>Users</Link>
 					<Link href="/admin/content" onClick={() => setSidebarOpen(false)}><span className="nav-icon pages" aria-hidden="true"></span>Content</Link>
 					<Link className="active" href="/admin/inbox" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Support inbox</Link>
+					<Link href="/admin/communications" onClick={() => setSidebarOpen(false)}><span className="nav-icon inbox" aria-hidden="true"></span>Team &amp; updates</Link>
+					<Link href="/account" onClick={() => setSidebarOpen(false)}><span className="nav-icon users" aria-hidden="true"></span>My profile</Link>
+					<Link href="/account/security" onClick={() => setSidebarOpen(false)}><span className="nav-icon settings" aria-hidden="true"></span>Security</Link>
 				</nav>
 				<div className="admin-sidebar-bottom">
 					<Link className="admin-home-link" href="/">View public website ↗</Link>
 					{admin && <div className="admin-profile">
-						<div className="profile-avatar">{admin.name.trim().slice(0, 1).toUpperCase()}</div>
-						<div><strong>{admin.name}</strong><span>Administrator</span></div>
+						<div className="profile-avatar">{admin.profileImageUrl
+							? <Image src={admin.profileImageUrl} alt="" width={36} height={36} unoptimized />
+							: admin.name.trim().slice(0, 1).toUpperCase()}</div>
+						<div><strong>{admin.name}</strong><span>{admin.role === "OWNER" ? "Owner" : "Administrator"}</span></div>
 						<button type="button" aria-label="Log out" onClick={logout}>↪</button>
 					</div>}
 				</div>

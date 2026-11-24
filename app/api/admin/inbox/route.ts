@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
-import { getCurrentUserFromRequest } from "@/lib/auth";
+import { getCurrentUserFromRequest, isStaffUser } from "@/lib/auth";
 import { getPrismaClient } from "@/lib/prisma";
 
 export async function GET(request: Request) {
 	try {
 		const user = await getCurrentUserFromRequest(request);
 		if (!user) return NextResponse.json({ error: "Please log in to continue." }, { status: 401 });
-		if (user.role !== "ADMIN") return NextResponse.json({ error: "Administrator access is required." }, { status: 403 });
+		if (!isStaffUser(user)) return NextResponse.json({ error: "Administrator access is required." }, { status: 403 });
 
 		const url = new URL(request.url);
 		const conversationId = url.searchParams.get("conversationId");

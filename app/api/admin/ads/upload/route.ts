@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
-import { getCurrentUserFromRequest, isSameOrigin } from "@/lib/auth";
+import { getCurrentUserFromRequest, isSameOrigin, isStaffUser } from "@/lib/auth";
 import { getR2Client } from "@/lib/r2";
 
 const maximumUploadBytes = 100 * 1024 * 1024;
@@ -22,7 +22,7 @@ const uploadSchema = z.object({
 async function requireAdministrator(request: Request) {
 	const user = await getCurrentUserFromRequest(request);
 	if (!user) return { response: NextResponse.json({ error: "Please log in to continue." }, { status: 401 }) };
-	if (user.role !== "ADMIN") return { response: NextResponse.json({ error: "Administrator access is required." }, { status: 403 }) };
+	if (!isStaffUser(user)) return { response: NextResponse.json({ error: "Administrator access is required." }, { status: 403 }) };
 	return { user };
 }
 
@@ -34,6 +34,9 @@ export async function POST(request: Request) {
 	try {
 		const auth = await requireAdministrator(request);
 		if ("response" in auth) return auth.response;
+		if (auth.user.role !== "ADMIN") {
+			return NextResponse.json({ error: "Only administrators can upload advertisement media." }, { status: 403 });
+		}
 		const parsed = uploadSchema.safeParse(await request.json());
 		if (!parsed.success) {
 			return NextResponse.json({ error: "Choose an image or video file no larger than 100 MB." }, { status: 400 });

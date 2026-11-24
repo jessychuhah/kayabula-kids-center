@@ -18,6 +18,11 @@ export async function GET() {
 					mediaType: true,
 					mediaUrl: true,
 					targetUrl: true,
+					durationSeconds: true,
+					assets: {
+						orderBy: { sortOrder: "asc" },
+						select: { id: true, url: true, mediaType: true },
+					},
 				},
 			}),
 		]);
