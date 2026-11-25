@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DashboardCharts from "@/app/admin/dashboard-charts";
+import { DashboardThemeInitializer, DashboardThemeToggle } from "@/app/admin/dashboard-theme";
 
 type OwnerDashboardData = {
 	user: { name: string; email: string; role: string; profileImageUrl: string | null };
@@ -82,6 +83,7 @@ export default function OwnerDashboard() {
 
 	return (
 		<div className="admin-shell owner-shell">
+			<DashboardThemeInitializer />
 			<aside className={sidebarOpen ? "admin-sidebar open" : "admin-sidebar"}>
 				<div className="admin-brand">
 					<Image src="/assets/logo.jpeg" alt="Kayabula Kids Centre" width={48} height={48} />
@@ -116,7 +118,7 @@ export default function OwnerDashboard() {
 						<span></span><span></span><span></span>
 					</button>
 					<div><p>OWNER WORKSPACE</p><h1>Overview</h1></div>
-					<div className="topbar-actions"><Link className="quick-button" href="/account/security">Account security</Link></div>
+					<div className="topbar-actions"><DashboardThemeToggle /><Link className="quick-button" href="/account/security">Account security</Link></div>
 				</header>
 				<div className="admin-content" id="overview">
 					{error && <p className="admin-data-error" role="alert">{error}</p>}

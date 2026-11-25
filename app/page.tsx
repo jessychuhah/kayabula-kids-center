@@ -580,7 +580,7 @@ export default function Home() {
 							<div className="payment-warning" role="status">
 								<strong>{paymentStatus}</strong>
 								<p>
-									{paymentError || "Secure payment processing begins only after merchant credentials are configured. No payment is currently taken through this website."}
+									{paymentError || "Secure payment processing begins only after merchant credentials are configured. No payment is currently taken using this MTN MoMo, AIRTEL Money or VISA Card. use the email link below to ask about donating to use currently available methods."}
 								</p>
 							</div>
 							<a

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DashboardCharts from "@/app/admin/dashboard-charts";
+import { DashboardThemeToggle } from "@/app/admin/dashboard-theme";
 
 type DashboardData = {
 	user: { name: string; email: string; role: string; profileImageUrl: string | null };
@@ -126,6 +127,7 @@ export default function AdminDashboard() {
 					</button>
 					<div><p>ADMIN WORKSPACE</p><h1>Overview</h1></div>
 					<div className="topbar-actions">
+						<DashboardThemeToggle />
 						<button type="button" className="quick-button" disabled={loading} onClick={() => { setLoading(true); setRefreshKey((key) => key + 1); }}>
 							<span>↻</span> Refresh data
 						</button>

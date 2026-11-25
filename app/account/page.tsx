@@ -32,6 +32,8 @@ export default function AccountPage() {
 	const [registering, setRegistering] = useState(false);
 	const [recovering, setRecovering] = useState(false);
 	const [otpRequested, setOtpRequested] = useState(false);
+	const [passwordVisible, setPasswordVisible] = useState(false);
+	const [resetPasswordVisible, setResetPasswordVisible] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState("");
 	const [resetNotice, setResetNotice] = useState("");
@@ -175,7 +177,10 @@ export default function AccountPage() {
 												{otpRequested && (
 													<>
 														<label>Email verification code<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required /></label>
-														<label>New password<input name="newPassword" type="password" autoComplete="new-password" minLength={10} maxLength={128} required /></label>
+														<label>New password<div className="password-input-wrap">
+															<input name="newPassword" type={resetPasswordVisible ? "text" : "password"} autoComplete="new-password" minLength={10} maxLength={128} required />
+															<button type="button" className="password-visibility-toggle" aria-label={resetPasswordVisible ? "Hide password" : "Show password"} aria-pressed={resetPasswordVisible} onClick={() => setResetPasswordVisible((visible) => !visible)}>{resetPasswordVisible ? "Hide" : "Show"}</button>
+														</div></label>
 													</>
 												)}
 												{error && <p className="account-error" role="alert">{error}</p>}
@@ -210,7 +215,10 @@ export default function AccountPage() {
 											</>
 										)}
 										<label>Email address<input name="email" type="email" autoComplete="email" maxLength={160} required /></label>
-										<label>Password<input name="password" type="password" autoComplete={registering ? "new-password" : "current-password"} minLength={registering ? 10 : undefined} maxLength={128} required /></label>
+										<label>Password<div className="password-input-wrap">
+											<input name="password" type={passwordVisible ? "text" : "password"} autoComplete={registering ? "new-password" : "current-password"} minLength={registering ? 10 : undefined} maxLength={128} required />
+											<button type="button" className="password-visibility-toggle" aria-label={passwordVisible ? "Hide password" : "Show password"} aria-pressed={passwordVisible} onClick={() => setPasswordVisible((visible) => !visible)}>{passwordVisible ? "Hide" : "Show"}</button>
+										</div></label>
 										{error && <p className="account-error" role="alert">{error}</p>}
 										<button className="button button-purple account-action" type="submit" disabled={submitting}>
 											{submitting ? "Please wait…" : registering ? "Create account" : "Sign in"}

@@ -45,7 +45,29 @@ export function safeSecretMatch(provided: string, expected: string | undefined) 
 
 export function isSameOrigin(request: Request) {
 	const origin = request.headers.get("origin");
-	return origin !== null && origin === new URL(request.url).origin;
+	if (!origin) return false;
+
+	let originUrl: URL;
+	try {
+		originUrl = new URL(origin);
+	} catch {
+		return false;
+	}
+
+	const requestUrl = new URL(request.url);
+	if (originUrl.origin === requestUrl.origin) return true;
+
+	const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0].trim();
+	const host = forwardedHost || request.headers.get("host");
+	const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
+	const protocol = forwardedProtocol ? `${forwardedProtocol}:` : requestUrl.protocol;
+	if (!host || (protocol !== "http:" && protocol !== "https:")) return false;
+
+	try {
+		return originUrl.origin === new URL(`${protocol}//${host}`).origin;
+	} catch {
+		return false;
+	}
 }
 
 export async function getCurrentUserForToken(token: string | undefined): Promise<AuthUser | null> {

@@ -70,6 +70,7 @@ export default function AdminUsersPage() {
 	const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
 	const [form, setForm] = useState<AccountForm>(emptyForm);
 	const [saving, setSaving] = useState(false);
+	const [temporaryPasswordVisible, setTemporaryPasswordVisible] = useState(false);
 	const [notice, setNotice] = useState("");
 
 	useEffect(() => {
@@ -113,6 +114,7 @@ export default function AdminUsersPage() {
 	function startAdd() {
 		setEditingUser(null);
 		setForm(emptyForm);
+		setTemporaryPasswordVisible(false);
 		setError("");
 		setModalOpen(true);
 	}
@@ -159,6 +161,8 @@ export default function AdminUsersPage() {
 
 	async function submitAccount(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (editingUser && editingUser.role !== "OWNER" && form.role === "OWNER" &&
+			!window.confirm(`Grant permanent ownership to ${editingUser.name}? Administrators will not be able to change or revoke this role.`)) return;
 		setSaving(true);
 		setError("");
 		const payload: Record<string, string | null> = {
@@ -187,7 +191,9 @@ export default function AdminUsersPage() {
 			if (!response.ok) throw new Error(result.error || "Unable to save the account.");
 			setForm(emptyForm);
 			setModalOpen(false);
-			if (editingUser && editingUser.approvalStatus === "PENDING" && form.approvalStatus === "APPROVED") {
+			if (editingUser && editingUser.role !== "OWNER" && form.role === "OWNER") {
+				setNotice(`${editingUser.name} was granted permanent ownership. Administrators cannot change or revoke this role.`);
+			} else if (editingUser && editingUser.approvalStatus === "PENDING" && form.approvalStatus === "APPROVED") {
 				setNotice(approvalNotice(result));
 			} else {
 				setNotice("");
@@ -291,6 +297,7 @@ export default function AdminUsersPage() {
 									<option value="ALL">All</option>
 									<option value="ADMIN">Admins</option>
 									<option value="USER">Members</option>
+									{admin?.role === "OWNER" && <option value="OWNER">Owners</option>}
 								</select>
 							</label>
 						</div>
@@ -357,7 +364,13 @@ export default function AdminUsersPage() {
 							</select>
 						</label>
 						<label>Role<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-							<option value="USER">Member</option>{admin?.role === "OWNER" && <option value="ADMIN">Admin</option>}
+							<option value="USER">Member</option>
+							{(admin?.role === "OWNER" || editingUser?.role === "ADMIN") && <option value="ADMIN" disabled={admin?.role !== "OWNER"}>Admin</option>}
+							{editingUser && editingUser.role !== "OWNER" && (
+								<option value="OWNER" disabled={editingUser.status !== "ACTIVE" || editingUser.approvalStatus !== "APPROVED"}>
+									Owner (permanent)
+								</option>
+							)}
 						</select></label>
 						{editingUser ? (
 							<>
@@ -369,7 +382,10 @@ export default function AdminUsersPage() {
 								</select></label>
 							</>
 						) : (
-							<label>Temporary password<input type="password" autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} minLength={10} maxLength={128} required /></label>
+							<label>Temporary password<div className="password-input-wrap">
+								<input type={temporaryPasswordVisible ? "text" : "password"} autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} minLength={10} maxLength={128} required />
+								<button type="button" className="password-visibility-toggle" aria-label={temporaryPasswordVisible ? "Hide password" : "Show password"} aria-pressed={temporaryPasswordVisible} onClick={() => setTemporaryPasswordVisible((visible) => !visible)}>{temporaryPasswordVisible ? "Hide" : "Show"}</button>
+							</div></label>
 						)}
 						{error && <p className="account-error" role="alert">{error}</p>}
 						<div className="user-modal-actions">

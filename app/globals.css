@@ -839,3 +839,303 @@ html:has(.support-chat-widget.is-open), body:has(.support-chat-widget.is-open) {
 	.profile-photo-card { align-items: flex-start; gap: 12px; padding: 12px; }
 	.profile-photo-preview { width: 58px; height: 58px; }
 }
+
+.password-input-wrap { position: relative; display: flex; align-items: center; }
+.password-input-wrap input { padding-right: 68px !important; }
+.password-visibility-toggle {
+	position: absolute;
+	right: 8px;
+	min-width: 48px;
+	min-height: 32px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--purple);
+	font-size: 11px;
+	font-weight: 800;
+	cursor: pointer;
+}
+.password-visibility-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.dashboard-theme-toggle {
+	min-height: 40px;
+	border: 1px solid #59436c;
+	border-radius: 7px;
+	padding: 0 12px;
+	background: #2b1d39;
+	color: #f3eafd;
+	font-size: 11px;
+	font-weight: 800;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.dashboard-theme-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.dashboard-theme-toggle .theme-label-dark { display: none; }
+html[data-dashboard-theme="light"] .dashboard-theme-toggle .theme-label-light { display: none; }
+html[data-dashboard-theme="light"] .dashboard-theme-toggle .theme-label-dark { display: inline; }
+
+.admin-shell {
+	--purple: #ba98df;
+	--dashboard-bg: #171020;
+	--dashboard-surface: #21182c;
+	--dashboard-surface-raised: #2b2038;
+	--dashboard-border: #42344f;
+	--dashboard-ink: #f1eaf8;
+	--dashboard-muted: #b6aabe;
+	--dashboard-subtle: #93879f;
+	--dashboard-line: #3b2e49;
+	--dashboard-input: #2b2037;
+	--dashboard-hover: #32233f;
+	min-height: 100vh;
+	background: var(--dashboard-bg);
+	color: var(--dashboard-ink);
+	color-scheme: dark;
+}
+html[data-dashboard-theme="light"] .admin-shell {
+	--purple: #451a82;
+	--dashboard-bg: #f6f7fb;
+	--dashboard-surface: #fff;
+	--dashboard-surface-raised: #faf9fc;
+	--dashboard-border: #eceaf1;
+	--dashboard-ink: #25232b;
+	--dashboard-muted: #777482;
+	--dashboard-subtle: #9995a1;
+	--dashboard-line: #f0eef4;
+	--dashboard-input: #fff;
+	--dashboard-hover: #f7f5fa;
+	color-scheme: light;
+}
+.admin-shell .admin-sidebar,
+.admin-shell .admin-topbar,
+.admin-shell .overview-card,
+.admin-shell .chart-card,
+.admin-shell .donation-mix-card,
+.admin-shell .table-card,
+.admin-shell .enquiry-card,
+.admin-shell .owner-shortcuts a,
+.admin-shell .support-inbox,
+.admin-shell .user-modal,
+.admin-shell .review-button,
+.admin-shell .icon-button,
+.admin-shell .user-row-actions > div {
+	border-color: var(--dashboard-border);
+	background: var(--dashboard-surface);
+	color: var(--dashboard-ink);
+}
+.admin-shell .admin-brand,
+.admin-shell .admin-sidebar-bottom { border-color: var(--dashboard-border); }
+.admin-shell .admin-brand strong,
+.admin-shell .admin-nav a.active,
+.admin-shell .admin-nav button.active,
+.admin-shell .view-link,
+.admin-shell .owner-shortcuts .nav-icon,
+.admin-shell .file-pick,
+.admin-shell .ad-current-media button { color: var(--purple) !important; }
+.admin-shell .admin-brand span,
+.admin-shell .admin-nav p,
+.admin-shell .admin-profile span,
+.admin-shell .admin-topbar p,
+.admin-shell .card-heading p,
+.admin-shell .overview-card p,
+.admin-shell .owner-shortcuts small,
+.admin-shell .owner-permissions-note,
+.admin-shell .admin-data-state,
+.admin-shell .user-role-filter,
+.admin-shell .users-table th,
+.admin-shell .users-table td small,
+.admin-shell .table-head,
+.admin-shell .table-row > span,
+.admin-shell .table-row > strong,
+.admin-shell .chart-y-axis,
+.admin-shell .chart-x-axis,
+.admin-shell .dashboard-chart-labels,
+.admin-shell .dashboard-pie-legend li,
+.admin-shell .staff-message-meta time,
+.admin-shell .published-update-heading span,
+.admin-shell .selected-file,
+.admin-shell .file-pick input[type="file"],
+.admin-shell .support-conversation-list > button small,
+.admin-shell .support-conversation-list > button span,
+.admin-shell .support-conversation > header span,
+.admin-shell .support-inbox-messages article time,
+.admin-shell .content-helper,
+.admin-shell .advertisement-admin-list span,
+.admin-shell .advertisement-admin-list p {
+	color: var(--dashboard-muted);
+}
+.admin-shell .admin-profile,
+.admin-shell .admin-nav a.active,
+.admin-shell .admin-nav button.active,
+.admin-shell .admin-menu-button,
+.admin-shell .metric-icon.purple,
+.admin-shell .metric-icon.gold,
+.admin-shell .metric-icon.teal,
+.admin-shell .metric-icon.cream,
+.admin-shell .donor-cell i,
+.admin-shell .enquiry-avatar.purple,
+.admin-shell .staff-message-meta > span,
+.admin-shell .user-row-actions[open] summary,
+.admin-shell .user-row-actions summary:hover,
+.admin-shell .support-conversation-list > button.selected,
+.admin-shell .support-conversation-list > button:hover,
+.admin-shell .support-inbox-messages article,
+.admin-shell .support-inbox-messages article.from-admin,
+.admin-shell .advertisement-admin-form {
+	background: var(--dashboard-surface-raised);
+}
+.admin-shell .admin-profile strong,
+.admin-shell .admin-topbar h1,
+.admin-shell .overview-card strong,
+.admin-shell .card-heading h2,
+.admin-shell .donor-cell strong,
+.admin-shell .enquiry-item strong,
+.admin-shell .users-table td strong,
+.admin-shell .owner-shortcuts strong,
+.admin-shell .staff-message-meta strong,
+.admin-shell .published-update-heading strong,
+.admin-shell .staff-message-body > p,
+.admin-shell .published-update-list article > p,
+.admin-shell .support-conversation-list > button strong,
+.admin-shell .support-conversation > header strong,
+.admin-shell .support-inbox-messages article p,
+.admin-shell .advertisement-admin-list strong,
+.admin-shell .dashboard-pie strong,
+.admin-shell .dashboard-pie-legend strong {
+	color: var(--dashboard-ink);
+}
+.admin-shell .admin-nav a,
+.admin-shell .admin-nav button,
+.admin-shell .admin-profile button,
+.admin-shell .user-row-actions summary,
+.admin-shell .user-row-actions button,
+.admin-shell .user-modal > .card-heading > button,
+.admin-shell .enquiry-item span,
+.admin-shell .enquiry-item small {
+	color: var(--dashboard-muted);
+}
+.admin-shell .admin-nav a.active,
+.admin-shell .admin-nav button.active {
+	background: #38264b;
+}
+.admin-shell .admin-nav a.active::before,
+.admin-shell .admin-nav button.active::before { background: var(--purple); }
+.admin-shell .nav-icon.grid {
+	background: linear-gradient(var(--purple),var(--purple)) 0 0/7px 7px no-repeat, linear-gradient(var(--purple),var(--purple)) 10px 0/7px 7px no-repeat, linear-gradient(var(--purple),var(--purple)) 0 10px/7px 7px no-repeat, linear-gradient(var(--purple),var(--purple)) 10px 10px/7px 7px no-repeat;
+}
+.admin-shell .admin-menu-button,
+.admin-shell .user-search input,
+.admin-shell .user-role-filter select,
+.admin-shell .user-modal-form input,
+.admin-shell .user-modal-form select,
+.admin-shell .team-message-form textarea,
+.admin-shell .update-publish-form textarea,
+.admin-shell .update-publish-form input:not([type="file"]),
+.admin-shell .content-settings-form input,
+.admin-shell .advertisement-admin-form input:not([type="checkbox"]),
+.admin-shell .advertisement-admin-form textarea,
+.admin-shell .support-conversation > form textarea,
+.admin-shell .card-heading select {
+	border-color: var(--dashboard-border);
+	background: var(--dashboard-input);
+	color: var(--dashboard-ink);
+}
+.admin-shell .user-search input::placeholder,
+.admin-shell .team-message-form textarea::placeholder,
+.admin-shell .update-publish-form textarea::placeholder { color: var(--dashboard-subtle); }
+.admin-shell .users-table th,
+.admin-shell .users-table td,
+.admin-shell .table-row,
+.admin-shell .staff-message-list,
+.admin-shell .staff-message,
+.admin-shell .published-update-list > article,
+.admin-shell .support-conversation-list,
+.admin-shell .support-conversation-list > button,
+.admin-shell .support-conversation > header,
+.admin-shell .support-conversation > form,
+.admin-shell .direct-messages-layout,
+.admin-shell .direct-conversation-list,
+.admin-shell .direct-conversation-list > button,
+.admin-shell .direct-message {
+	border-color: var(--dashboard-line);
+}
+.admin-shell .users-table td,
+.admin-shell .user-role-filter,
+.admin-shell .donor-cell strong,
+.admin-shell .dashboard-pie-legend li,
+.admin-shell .staff-message-body > p,
+.admin-shell .support-inbox-messages article p,
+.admin-shell .direct-conversation-list > button,
+.admin-shell .direct-conversation-body > p {
+	color: var(--dashboard-muted);
+}
+.admin-shell .user-row-actions > div { box-shadow: 0 8px 24px rgba(0,0,0,.32); }
+.admin-shell .user-row-actions button:hover { background: var(--dashboard-hover); }
+.admin-shell .review-button { color: var(--purple); }
+.admin-shell .quick-button,
+.admin-shell .button-purple {
+	border-color: transparent;
+	background: #54277c;
+	color: #fff;
+}
+.admin-shell .dashboard-theme-toggle {
+	border-color: var(--dashboard-border);
+	background: var(--dashboard-surface-raised);
+	color: var(--dashboard-ink);
+}
+.admin-shell .chart-grid i,
+.admin-shell .dashboard-line-chart svg line { stroke: var(--dashboard-border); }
+.admin-shell .dashboard-line-chart svg circle { fill: var(--dashboard-surface); }
+.admin-shell .dashboard-pie { color: var(--dashboard-ink); }
+.admin-shell .dashboard-pie::before { background: var(--dashboard-surface); }
+.admin-shell .sidebar-backdrop { background: rgba(8,5,12,.68); }
+.admin-shell .sidebar-close { color: var(--dashboard-ink); }
+.admin-shell .owner-welcome .button { background: #2a143e; color: #fff; }
+.admin-shell .admin-data-error { color: #842c2a; }
+.admin-shell .admin-success-notice { color: #35645c; }
+.admin-shell .user-modal-backdrop { background: rgba(7,4,10,.72); }
+.admin-shell .user-modal-form label,
+.admin-shell .update-publish-form label,
+.admin-shell .content-settings-form label,
+.admin-shell .advertisement-admin-form label { color: var(--purple); }
+.admin-shell .support-conversation > form { border-color: var(--dashboard-border); }
+.admin-shell .support-conversation-list > button { background: var(--dashboard-surface); }
+.admin-shell .support-conversation-list > button:hover,
+.admin-shell .support-conversation-list > button.selected { background: var(--dashboard-hover); }
+.admin-shell .support-inbox-messages article { background: var(--dashboard-surface-raised); }
+.admin-shell .support-inbox-messages article.from-admin { background: #38264b; }
+.admin-shell .advertisement-admin-list > article { border-color: var(--dashboard-border); }
+
+.admin-shell .password-visibility-toggle { color: var(--purple); }
+.admin-shell .dashboard-theme-toggle { color-scheme: inherit; }
+
+html[data-dashboard-theme="light"] .admin-shell .admin-nav a.active,
+html[data-dashboard-theme="light"] .admin-shell .admin-nav button.active { background: #f2edf8; }
+html[data-dashboard-theme="light"] .admin-shell .admin-profile,
+html[data-dashboard-theme="light"] .admin-shell .admin-nav a.active,
+html[data-dashboard-theme="light"] .admin-shell .admin-nav button.active,
+html[data-dashboard-theme="light"] .admin-shell .admin-menu-button,
+html[data-dashboard-theme="light"] .admin-shell .metric-icon.purple,
+html[data-dashboard-theme="light"] .admin-shell .metric-icon.gold,
+html[data-dashboard-theme="light"] .admin-shell .metric-icon.teal,
+html[data-dashboard-theme="light"] .admin-shell .metric-icon.cream,
+html[data-dashboard-theme="light"] .admin-shell .donor-cell i,
+html[data-dashboard-theme="light"] .admin-shell .staff-message-meta > span,
+html[data-dashboard-theme="light"] .admin-shell .user-row-actions[open] summary,
+html[data-dashboard-theme="light"] .admin-shell .user-row-actions summary:hover,
+html[data-dashboard-theme="light"] .admin-shell .support-conversation-list > button.selected,
+html[data-dashboard-theme="light"] .admin-shell .support-conversation-list > button:hover,
+html[data-dashboard-theme="light"] .admin-shell .support-inbox-messages article,
+html[data-dashboard-theme="light"] .admin-shell .support-inbox-messages article.from-admin,
+html[data-dashboard-theme="light"] .admin-shell .advertisement-admin-form {
+	background: var(--dashboard-surface-raised);
+}
+html[data-dashboard-theme="light"] .admin-shell .quick-button,
+html[data-dashboard-theme="light"] .admin-shell .button-purple {
+	background: var(--purple);
+}
+html[data-dashboard-theme="light"] .admin-shell .owner-welcome .button {
+	background: var(--cream);
+	color: var(--purple);
+}
+html[data-dashboard-theme="light"] .admin-shell .sidebar-backdrop { background: rgba(37,35,43,.35); }
+html[data-dashboard-theme="light"] .admin-shell .user-modal-backdrop { background: rgba(37,35,43,.48); }

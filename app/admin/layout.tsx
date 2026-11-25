@@ -2,13 +2,14 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser, isStaffUser } from "@/lib/auth";
 import PresenceHeartbeat from "@/app/admin/presence-heartbeat";
+import { DashboardThemeInitializer } from "@/app/admin/dashboard-theme";
 
 export default function AdminLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
 		<Suspense fallback={<main className="admin-data-state">Checking administrator access…</main>}>
-			<RequireAdministrator>{children}</RequireAdministrator>
+			<RequireAdministrator>{children}<DashboardThemeInitializer /></RequireAdministrator>
 		</Suspense>
 	);
 }

@@ -27,7 +27,7 @@ const updateUserSchema = z.object({
 	phone: userFields.phone.optional(),
 	location: z.string().trim().max(120).optional(),
 	category: userFields.category,
-	role: userFields.role.optional(),
+	role: z.enum(["USER", "ADMIN", "OWNER"]).optional(),
 	status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
 	approvalStatus: z.enum(["PENDING", "APPROVED"]).optional(),
 }).refine((value) => Object.keys(value).some((key) => key !== "id"), {
@@ -138,20 +138,23 @@ export async function PATCH(request: Request) {
 			});
 			if (!target) throw new Error("USER_NOT_FOUND");
 			if (target.role === "OWNER") throw new Error("CANNOT_MANAGE_OWNER");
-			if (auth.user.role !== "OWNER" && target.role === "ADMIN") throw new Error("OWNER_ACCESS_REQUIRED");
+			if (changes.role === "OWNER" && (target.status !== "ACTIVE" || target.approvalStatus !== "APPROVED")) {
+				throw new Error("OWNER_TARGET_NOT_ELIGIBLE");
+			}
+			if (auth.user.role !== "OWNER" && target.role === "ADMIN" && changes.role !== "OWNER") throw new Error("OWNER_ACCESS_REQUIRED");
 			if (auth.user.role !== "OWNER" && changes.role === "ADMIN") throw new Error("OWNER_ACCESS_REQUIRED");
 			if (target.approvalStatus === "APPROVED" && changes.approvalStatus === "PENDING") {
 				throw new Error("CANNOT_REVOKE_APPROVAL");
 			}
 
-			const willBeAdmin = changes.role ?? target.role;
+			const willBeRole = changes.role ?? target.role;
 			const willBeApproved = changes.approvalStatus ?? target.approvalStatus;
 			const isApprovalTransition = target.approvalStatus !== "APPROVED" && willBeApproved === "APPROVED";
 			const willBeActive = isApprovalTransition ? "ACTIVE" : changes.status ?? target.status;
-			if (target.id === auth.user.id && (willBeAdmin !== "ADMIN" || willBeActive !== "ACTIVE")) {
+			if (target.id === auth.user.id && (willBeRole !== "ADMIN" || willBeActive !== "ACTIVE")) {
 				throw new Error("CANNOT_DISABLE_SELF");
 			}
-			if (target.role === "ADMIN" && target.status === "ACTIVE" && (willBeAdmin !== "ADMIN" || willBeActive !== "ACTIVE")) {
+			if (target.role === "ADMIN" && target.status === "ACTIVE" && (willBeRole !== "ADMIN" || willBeActive !== "ACTIVE")) {
 				const activeAdminCount = await transaction.user.count({ where: { role: "ADMIN", status: "ACTIVE" } });
 				if (activeAdminCount <= 1) throw new Error("LAST_ACTIVE_ADMIN");
 			}
@@ -208,6 +211,9 @@ export async function PATCH(request: Request) {
 		}
 		if (error instanceof Error && error.message === "CANNOT_MANAGE_OWNER") {
 			return NextResponse.json({ error: "The owner account cannot be changed from the user directory." }, { status: 409 });
+		}
+		if (error instanceof Error && error.message === "OWNER_TARGET_NOT_ELIGIBLE") {
+			return NextResponse.json({ error: "Only an active, approved account can be granted ownership." }, { status: 409 });
 		}
 		if (error instanceof Error && error.message === "OWNER_ACCESS_REQUIRED") {
 			return NextResponse.json({ error: "Only the owner can manage administrator accounts." }, { status: 403 });
